@@ -163,18 +163,24 @@ async function fetchVacanciesFromHH({ query, city, salary, schedule }) {
   }
 
   const url = `${HH_BASE_URL}?${params.toString()}`;
+  console.log("HH request URL:", url);
+
+  const headers = {
+    "User-Agent": HH_USER_AGENT,
+    Accept: "application/json",
+  };
+  if (process.env.HH_ACCESS_TOKEN) {
+    headers.Authorization = `Bearer ${process.env.HH_ACCESS_TOKEN}`;
+  }
 
   const response = await fetch(url, {
     method: "GET",
-    headers: {
-      "User-Agent": HH_USER_AGENT,
-      Accept: "application/json",
-    },
+    headers,
   });
 
   if (!response.ok) {
     const errorBody = await response.text().catch(() => "");
-    throw new Error(`HH API error ${response.status}: ${errorBody}`);
+    throw new Error(`HH API вернул статус ${response.status}: ${errorBody.slice(0, 300)}`);
   }
 
   const data = await response.json();
@@ -297,8 +303,7 @@ module.exports = async function handler(req, res) {
   } catch (err) {
     console.error("vacancies handler error:", err?.message || err);
     res.status(502).json({
-      error: "Не удалось получить вакансии от HeadHunter",
-      details: err?.message || String(err),
+      error: err?.message || "Не удалось получить вакансии от HeadHunter",
     });
   }
 };

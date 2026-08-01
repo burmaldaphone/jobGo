@@ -22,27 +22,23 @@ function formatSalary(vacancy) {
 function buildHhUrl(queryParams) {
   const url = new URL('https://api.hh.ru/vacancies');
   url.searchParams.set('per_page', '30');
-
   const query = queryParams.query || '';
   const city = queryParams.city || '';
   const searchText = (query + ' ' + city).trim();
   if (searchText) {
     url.searchParams.set('text', searchText);
   }
-
   const salary = queryParams.salary;
   if (salary) {
     url.searchParams.set('salary', salary);
     url.searchParams.set('only_with_salary', 'true');
   }
-
   const schedule = queryParams.schedule;
   if (schedule === 'remote') {
     url.searchParams.set('schedule', 'remote');
   } else if (schedule === 'office') {
     url.searchParams.set('schedule', 'office');
   }
-
   return url.toString();
 }
 
@@ -69,20 +65,16 @@ function setCorsHeaders(res) {
 
 export default async function handler(req, res) {
   setCorsHeaders(res);
-
   if (req.method === 'OPTIONS') {
     res.status(204).send('');
     return;
   }
-
   if (req.method !== 'GET') {
     res.status(405).json({ error: 'Method not allowed' });
     return;
   }
-
   const queryParams = req.query || {};
   const hhUrl = buildHhUrl(queryParams);
-
   let vacancies = [];
   try {
     const hhResponse = await fetchWithTimeout(hhUrl, {
@@ -114,15 +106,11 @@ export default async function handler(req, res) {
   } catch (err) {
     console.error('HH API error:', err.message);
   }
-
   let aiAnalysis = null;
   const deepseekKey = process.env.DEEPSEEK_API_KEY;
   if (deepseekKey && vacancies.length > 0) {
     const query = queryParams.query || '';
-    const topVacancies = vacancies.slice(0, 10);
-
     const deepseekPrompt = 'Проанализируй эти 5-10 вакансий по запросу \'' + query + '\'. Дай емкое резюме на 2-3 предложения: средняя вилка зарплат, самые частые требования/навыки и совет соискателю. Напиши без лишнего текста, сразу суть.';
-
     try {
       const dsResponse = await fetchWithTimeout(
         'https://api.deepseek.com/v1/chat/completions',
@@ -143,7 +131,6 @@ export default async function handler(req, res) {
         },
         10000
       );
-
       if (dsResponse.ok) {
         const dsData = await dsResponse.json();
         aiAnalysis = dsData.choices && dsData.choices[0] && dsData.choices[0].message && dsData.choices[0].message.content
@@ -155,7 +142,6 @@ export default async function handler(req, res) {
       aiAnalysis = null;
     }
   }
-
   res.status(200).json({
     vacancies: vacancies,
     aiAnalysis: aiAnalysis,

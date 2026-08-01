@@ -15,16 +15,21 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 1. Запрос к HeadHunter API
+    // 1. Запрос к HeadHunter API с маскировкой под браузер и корректным HH-User-Agent
     const hhUrl = `https://api.hh.ru/vacancies?text=${encodeURIComponent(query)}&area=${area}&per_page=10`;
+    
     const hhResponse = await fetch(hhUrl, {
       headers: {
-        'User-Agent': 'JobGoApp/1.0 (contact@jobgo.app)',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'HH-User-Agent': 'JobGoApp/1.0 (jobgo_support@gmail.com)',
         'Accept': 'application/json'
       },
     });
 
     if (!hhResponse.ok) {
+      // Если HH все равно выдает ошибку, возвращаем понятный текст
+      const errorText = await hhResponse.text();
+      console.error('HH Error response:', errorText);
       return res.status(hhResponse.status).json({ error: `Ошибка HH: ${hhResponse.status}` });
     }
 
@@ -40,7 +45,7 @@ export default async function handler(req, res) {
       title: item.name,
       company: item.employer?.name || 'Не указана',
       salary: item.salary
-        ? `${item.salary.from || ''} - ${item.salary.to || ''} ${item.salary.currency}`
+        ? `${item.salary.from || ''} ${item.salary.to ? '- ' + item.salary.to : ''} ${item.salary.currency}`
         : 'З/П не указана',
       url: item.alternate_url,
       snippet: item.snippet?.requirement || '',
@@ -50,7 +55,6 @@ export default async function handler(req, res) {
     const apiKey = process.env.DEEPSEEK_API_KEY;
 
     if (!apiKey) {
-      // Если ключа нет, просто отдаем найденные вакансии
       return res.status(200).json({ vacancies: vacanciesList });
     }
 
@@ -70,7 +74,7 @@ export default async function handler(req, res) {
             },
             {
               role: 'user',
-              content: `Пользователь ищет: "${query}". Вот вакансии: ${JSON.stringify(vacanciesList)}. Оцени их.`,
+              content: `Пользователь ищет: "${query}". Вот вакансии: ${JSON.stringify(vacanciesList)}.`,
             },
           ],
         }),
@@ -87,7 +91,6 @@ export default async function handler(req, res) {
       console.error('Ошибка DeepSeek:', aiErr);
     }
 
-    // Если запрос к ИИ сбойнул, отдаем базовые вакансии без падения сервера
     return res.status(200).json({ vacancies: vacanciesList });
 
   } catch (error) {

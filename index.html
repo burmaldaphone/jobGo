@@ -42,19 +42,15 @@
       box-shadow: 0 4px 10px -2px rgba(0, 0, 0, 0.2);
     }
 
-    /* Subtle 3D Effect for Filters */
+    /* Subtle 3D Effect for Inputs/Filters */
     .filter-3d {
       perspective: 500px;
       transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
       box-shadow: 0 2px 5px rgba(0,0,0,0.04);
     }
     .filter-3d:focus-within, .filter-3d:hover {
-      transform: scale(1.02) translateZ(4px);
+      transform: scale(1.01) translateZ(3px);
       box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    }
-    .filter-3d:active {
-      transform: scale(0.97) translateZ(-2px);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
   </style>
 </head>
@@ -64,7 +60,7 @@
   <div class="sticky top-0 z-50 glass-card px-5 py-4 mb-6 shadow-sm border-b border-gray-200/50">
     <div class="max-w-md mx-auto flex justify-between items-center">
       <h1 class="text-xl font-bold tracking-tight text-gray-900">JobGo</h1>
-      <span class="text-xs font-semibold px-2.5 py-1 bg-gray-200/60 text-gray-600 rounded-full">v2.4</span>
+      <span class="text-xs font-semibold px-2.5 py-1 bg-gray-200/60 text-gray-600 rounded-full">v2.5</span>
     </div>
   </div>
 
@@ -86,7 +82,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
         </svg>
 
-        <!-- Autocomplete Suggestions Dropdown -->
+        <!-- Profession Dropdown -->
         <div id="suggestionsBox" class="hidden absolute left-0 right-0 top-full mt-2 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50 divide-y divide-gray-50">
         </div>
       </div>
@@ -94,29 +90,60 @@
       <!-- Filters Grid -->
       <div class="grid grid-cols-2 gap-2 pt-1">
         
-        <!-- Custom City Input -->
-        <div class="filter-3d bg-gray-100/90 rounded-xl px-3 py-2 flex items-center">
-          <input 
-            type="text" 
-            id="cityFilter" 
-            placeholder="🌆 Город (любой)" 
-            oninput="applyFilters()"
-            class="w-full bg-transparent text-xs font-semibold text-gray-800 focus:outline-none placeholder-gray-500"
-          />
+        <!-- City Select + Custom Option Dropdown -->
+        <div class="relative">
+          <div 
+            onclick="toggleCityDropdown()"
+            class="filter-3d bg-gray-100/90 rounded-xl px-3 py-2.5 flex items-center justify-between cursor-pointer">
+            <span id="cityLabel" class="text-xs font-semibold text-gray-700 truncate">🌆 Любой город</span>
+            <span class="text-[10px] text-gray-400">▼</span>
+          </div>
+
+          <div id="cityDropdown" class="hidden absolute left-0 right-0 top-full mt-2 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-gray-100 p-2 z-50 space-y-1">
+            <div onclick="selectCity('')" class="px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded-xl cursor-pointer">🌆 Любой город</div>
+            <div onclick="selectCity('Москва')" class="px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded-xl cursor-pointer">Москва</div>
+            <div onclick="selectCity('Санкт-Петербург')" class="px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded-xl cursor-pointer">Санкт-Петербург</div>
+            <div onclick="selectCity('Казань')" class="px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded-xl cursor-pointer">Казань</div>
+            <div onclick="selectCity('Екатеринбург')" class="px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded-xl cursor-pointer">Екатеринбург</div>
+            <div class="pt-1 border-t border-gray-100">
+              <input 
+                type="text" 
+                id="customCityInput" 
+                placeholder="✍️ Свой вариант..." 
+                oninput="onCustomCityInput(this.value)"
+                class="w-full bg-gray-100 text-xs font-medium px-3 py-2 rounded-xl focus:outline-none"
+              />
+            </div>
+          </div>
         </div>
 
-        <!-- Custom Salary Input -->
-        <div class="filter-3d bg-gray-100/90 rounded-xl px-3 py-2 flex items-center">
-          <input 
-            type="number" 
-            id="salaryFilter" 
-            placeholder="💰 Мин. зарплата (₽)" 
-            oninput="applyFilters()"
-            class="w-full bg-transparent text-xs font-semibold text-gray-800 focus:outline-none placeholder-gray-500"
-          />
+        <!-- Salary Select + Custom Option Dropdown -->
+        <div class="relative">
+          <div 
+            onclick="toggleSalaryDropdown()"
+            class="filter-3d bg-gray-100/90 rounded-xl px-3 py-2.5 flex items-center justify-between cursor-pointer">
+            <span id="salaryLabel" class="text-xs font-semibold text-gray-700 truncate">💰 Любая зарплата</span>
+            <span class="text-[10px] text-gray-400">▼</span>
+          </div>
+
+          <div id="salaryDropdown" class="hidden absolute right-0 left-0 top-full mt-2 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-gray-100 p-2 z-50 space-y-1">
+            <div onclick="selectSalary('', '💰 Любая зарплата')" class="px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded-xl cursor-pointer">💰 Любая</div>
+            <div onclick="selectSalary('50000', 'От 50 000 ₽')" class="px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded-xl cursor-pointer">От 50 000 ₽</div>
+            <div onclick="selectSalary('100000', 'От 100 000 ₽')" class="px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded-xl cursor-pointer">От 100 000 ₽</div>
+            <div onclick="selectSalary('150000', 'От 150 000 ₽')" class="px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded-xl cursor-pointer">От 150 000 ₽</div>
+            <div class="pt-1 border-t border-gray-100">
+              <input 
+                type="number" 
+                id="customSalaryInput" 
+                placeholder="✍️ Указать сумму ₽" 
+                oninput="onCustomSalaryInput(this.value)"
+                class="w-full bg-gray-100 text-xs font-medium px-3 py-2 rounded-xl focus:outline-none"
+              />
+            </div>
+          </div>
         </div>
 
-        <!-- Remote / Office Filter -->
+        <!-- Format Filter (с пунктом Любой) -->
         <select id="typeFilter" onchange="applyFilters()" class="filter-3d bg-gray-100/90 text-xs font-semibold text-gray-700 rounded-xl px-3 py-2.5 border-0 focus:ring-0 cursor-pointer appearance-none">
           <option value="all">💻 Любой формат</option>
           <option value="remote">🏠 Удалённо</option>
@@ -163,37 +190,19 @@
     const tg = window.Telegram?.WebApp;
     if (tg) tg.expand();
 
-    // Database of popular professions for autocomplete
     const professionDatabase = [
-      "Видеомонтажёр",
-      "Видеооператор",
-      "Видеомейкер",
-      "Motion Designer",
-      "2D Аниматор",
-      "3D Генералист",
-      "3D Моделлер",
-      "Python-разработчик",
-      "Frontend-разработчик",
-      "Backend-разработчик",
-      "Fullstack-разработчик",
-      "SMM-специалист",
-      "Контент-мейкер",
-      "Графический дизайнер",
-      "UI/UX Дизайнер",
-      "Product Manager",
-      "Project Manager",
-      "Копирайтер",
-      "Таргетолог",
-      "Маркетолог",
-      "Режиссёр монтажа",
-      "Звукорежиссёр",
-      "Иллюстратор"
+      "Видеомонтажёр", "Видеооператор", "Видеомейкер", "Motion Designer", 
+      "2D Аниматор", "3D Генералист", "Python-разработчик", "Frontend-разработчик", 
+      "Backend-разработчик", "SMM-специалист", "Контент-мейкер", "Графический дизайнер", 
+      "UI/UX Дизайнер", "Product Manager", "Project Manager", "Копирайтер", "Режиссёр монтажа"
     ];
 
     const searchInput = document.getElementById("searchInput");
     const suggestionsBox = document.getElementById("suggestionsBox");
 
-    // Random dynamic placeholder
+    let selectedCity = "";
+    let selectedSalary = "";
+
     document.addEventListener("DOMContentLoaded", () => {
       const randomProf = professionDatabase[Math.floor(Math.random() * professionDatabase.length)];
       searchInput.placeholder = `Например, ${randomProf}`;
@@ -235,14 +244,60 @@
       searchJobs();
     }
 
-    // Hide suggestions on click outside
+    // City Dropdown Handlers
+    function toggleCityDropdown() {
+      document.getElementById('salaryDropdown').classList.add('hidden');
+      document.getElementById('cityDropdown').classList.toggle('hidden');
+    }
+
+    function selectCity(city) {
+      selectedCity = city;
+      document.getElementById('cityLabel').innerText = city ? `🌆 ${city}` : '🌆 Любой город';
+      document.getElementById('cityDropdown').classList.add('hidden');
+      document.getElementById('customCityInput').value = '';
+      applyFilters();
+    }
+
+    function onCustomCityInput(val) {
+      selectedCity = val.trim();
+      document.getElementById('cityLabel').innerText = val.trim() ? `🌆 ${val.trim()}` : '🌆 Любой город';
+      applyFilters();
+    }
+
+    // Salary Dropdown Handlers
+    function toggleSalaryDropdown() {
+      document.getElementById('cityDropdown').classList.add('hidden');
+      document.getElementById('salaryDropdown').classList.toggle('hidden');
+    }
+
+    function selectSalary(value, label) {
+      selectedSalary = value;
+      document.getElementById('salaryLabel').innerText = label;
+      document.getElementById('salaryDropdown').classList.add('hidden');
+      document.getElementById('customSalaryInput').value = '';
+      applyFilters();
+    }
+
+    function onCustomSalaryInput(val) {
+      selectedSalary = val.trim();
+      document.getElementById('salaryLabel').innerText = val.trim() ? `От ${val.trim()} ₽` : '💰 Любая зарплата';
+      applyFilters();
+    }
+
+    // Hide dropdowns when clicking outside
     document.addEventListener("click", (e) => {
       if (!searchInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
         suggestionsBox.classList.add("hidden");
       }
+      if (!e.target.closest('#cityDropdown') && !e.target.closest('[onclick="toggleCityDropdown()"]')) {
+        document.getElementById('cityDropdown').classList.add('hidden');
+      }
+      if (!e.target.closest('#salaryDropdown') && !e.target.closest('[onclick="toggleSalaryDropdown()"]')) {
+        document.getElementById('salaryDropdown').classList.add('hidden');
+      }
     });
 
-    // Trigger search on Enter key
+    // Enter Key Search
     searchInput.addEventListener("keypress", (e) => {
       if (e.key === "Enter") {
         suggestionsBox.classList.add("hidden");
@@ -252,41 +307,30 @@
 
     let rawVacancies = [];
 
-    // Balatro 3D Button Tilt
+    // Balatro 3D Tilt
     const btn = document.getElementById('balatroBtn');
-    
     function handleMove(e) {
       const rect = btn.getBoundingClientRect();
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      
       const x = clientX - rect.left;
       const y = clientY - rect.top;
-      const centerX = rect.width / 2;
-      const centerY = rect.height / 2;
-      
-      const rotateX = ((y - centerY) / centerY) * -6; 
-      const rotateY = ((x - centerX) / centerX) * 5; 
-
+      const rotateX = ((y - rect.height / 2) / (rect.height / 2)) * -6; 
+      const rotateY = ((x - rect.width / 2) / (rect.width / 2)) * 5; 
       btn.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.01, 1.01, 1.01)`;
     }
-
     function handleReset() {
       btn.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
     }
-
     btn.addEventListener('mousemove', handleMove);
     btn.addEventListener('mouseleave', handleReset);
     btn.addEventListener('touchmove', handleMove);
     btn.addEventListener('touchend', handleReset);
 
-    // Search and Filter logic
+    // API Search & Filter
     async function searchJobs() {
       let query = searchInput.value.trim();
-      
-      if (!query) {
-        query = searchInput.placeholder.replace("Например, ", "");
-      }
+      if (!query) query = searchInput.placeholder.replace("Например, ", "");
 
       const vacanciesList = document.getElementById('vacanciesList');
       const aiBlock = document.getElementById('aiBlock');
@@ -333,31 +377,31 @@
     }
 
     function applyFilters() {
-      const cityInput = document.getElementById('cityFilter').value.trim().toLowerCase();
-      const minSalaryInput = parseInt(document.getElementById('salaryFilter').value.trim(), 10);
+      const cityQuery = selectedCity.toLowerCase();
+      const minSalary = parseInt(selectedSalary, 10);
       const type = document.getElementById('typeFilter').value;
       const source = document.getElementById('sourceFilter').value;
 
       let filtered = [...rawVacancies];
 
-      // Custom City Filter
-      if (cityInput) {
+      // Filter City
+      if (cityQuery) {
         filtered = filtered.filter(v => 
-          (v.snippet && v.snippet.toLowerCase().includes(cityInput)) ||
-          (v.title && v.title.toLowerCase().includes(cityInput))
+          (v.snippet && v.snippet.toLowerCase().includes(cityQuery)) ||
+          (v.title && v.title.toLowerCase().includes(cityQuery))
         );
       }
 
-      // Custom Min Salary Filter
-      if (!isNaN(minSalaryInput) && minSalaryInput > 0) {
+      // Filter Salary
+      if (!isNaN(minSalary) && minSalary > 0) {
         filtered = filtered.filter(v => {
           if (!v.salary) return false;
           const nums = v.salary.replace(/\s/g, '').match(/\d+/g);
-          return nums && nums.some(n => parseInt(n, 10) >= minSalaryInput);
+          return nums && nums.some(n => parseInt(n, 10) >= minSalary);
         });
       }
 
-      // Work Format Filter
+      // Filter Format
       if (type === 'remote') {
         filtered = filtered.filter(v => 
           (v.title + v.snippet).toLowerCase().includes('удален') || 
@@ -369,7 +413,7 @@
         );
       }
 
-      // Source Filter
+      // Filter Source
       if (source !== 'all') {
         filtered = filtered.filter(v => v.source === source);
       }

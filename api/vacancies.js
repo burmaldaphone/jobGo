@@ -1,5 +1,4 @@
 export default async function handler(req, res) {
-  // Разрешаем запросы (CORS)
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -8,29 +7,25 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  const { query, area = 1 } = req.query;
+  const { query } = req.query;
 
   if (!query) {
     return res.status(400).json({ error: 'Укажите поисковый запрос' });
   }
 
   try {
-    // 1. Запрос к HeadHunter API с маскировкой под браузер и корректным HH-User-Agent
-    const hhUrl = `https://api.hh.ru/vacancies?text=${encodeURIComponent(query)}&area=${area}&per_page=10`;
-    
-    const hhResponse = await fetch(hhUrl, {
+    // Используем CORS-прокси для обхода гео-блокировки дата-центров Vercel со стороны HH
+    const targetUrl = `https://api.hh.ru/vacancies?text=${encodeURIComponent(query)}&per_page=10`;
+    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+
+    const hhResponse = await fetch(proxyUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'HH-User-Agent': 'JobGoApp/1.0 (jobgo_support@gmail.com)',
-        'Accept': 'application/json'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
       },
     });
 
     if (!hhResponse.ok) {
-      // Если HH все равно выдает ошибку, возвращаем понятный текст
-      const errorText = await hhResponse.text();
-      console.error('HH Error response:', errorText);
-      return res.status(hhResponse.status).json({ error: `Ошибка HH: ${hhResponse.status}` });
+      throw new Error(`Ошибка обращения к HH: ${hhResponse.status}`);
     }
 
     const hhData = await hhResponse.json();
@@ -39,61 +34,51 @@ export default async function handler(req, res) {
       return res.status(200).json({ vacancies: [] });
     }
 
-    // Форматируем список вакансий
     const vacanciesList = hhData.items.map((item) => ({
       id: item.id,
       title: item.name,
       company: item.employer?.name || 'Не указана',
       salary: item.salary
-        ? `${item.salary.from || ''} ${item.salary.to ? '- ' + item.salary.to : ''} ${item.salary.currency}`
+        ? `${item.salary.from || ''} ${item.salary.to ? '- ' + item.salary.to : ''} ${item.salary.currency || ''}`
         : 'З/П не указана',
       url: item.alternate_url,
-      snippet: item.snippet?.requirement || '',
+      snippet: item.snippet?.requirement || item.snippet?.responsibility || '',
     }));
 
-    // 2. Обработка через DeepSeek (если ключ задан)
+    // Запрос к DeepSeek
     const apiKey = process.env.DEEPSEEK_API_KEY;
 
-    if (!apiKey) {
-      return res.status(200).json({ vacancies: vacanciesList });
-    }
-
-    try {
-      const deepseekResponse = await fetch('https://api.deepseek.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: 'deepseek-chat',
-          messages: [
-            {
-              role: 'system',
-              content: 'Ты HR-специалист. Оцени релевантность вакансий.',
-            },
-            {
-              role: 'user',
-              content: `Пользователь ищет: "${query}". Вот вакансии: ${JSON.stringify(vacanciesList)}.`,
-            },
-          ],
-        }),
-      });
-
-      if (deepseekResponse.ok) {
-        const aiData = await deepseekResponse.json();
-        return res.status(200).json({
-          vacancies: vacanciesList,
-          aiAnalysis: aiData.choices?.[0]?.message?.content || null
+    if (apiKey) {
+      try {
+        const deepseekResponse = await fetch('https://api.deepseek.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: 'deepseek-chat',
+            messages: [
+              { role: 'system', content: 'Ты HR-помощник.' },
+              { role: 'user', content: `Найди соответствия для: ${query}` },
+            ],
+          }),
         });
+
+        if (deepseekResponse.ok) {
+          const aiData = await deepseekResponse.json();
+          return res.status(200).json({
+            vacancies: vacanciesList,
+            aiAnalysis: aiData.choices?.[0]?.message?.content || null,
+          });
+        }
+      } catch (e) {
+        console.error('AI Error:', e);
       }
-    } catch (aiErr) {
-      console.error('Ошибка DeepSeek:', aiErr);
     }
 
     return res.status(200).json({ vacancies: vacanciesList });
-
   } catch (error) {
-    return res.status(500).json({ error: error.message || 'Внутренняя ошибка сервера' });
+    return res.status(500).json({ error: error.message });
   }
 }

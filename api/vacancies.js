@@ -1,5 +1,4 @@
 export default async function handler(req, res) {
-  // Настройка CORS для работы из Telegram Mini App
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -17,18 +16,17 @@ export default async function handler(req, res) {
   let allVacancies = [];
 
   // ==========================================
-  // 1. ИСТОЧНИК: Хабр Карьера (IT, Дизайн, Медиа)
+  // 1. ПОИСК ЧЕРЕЗ ХАБР КАРЬЕРУ
   // ==========================================
   try {
     const habrRes = await fetch(
-      `https://career.habr.com/api/v1/vacancies?q=${encodeURIComponent(query)}&per_page=5`,
-      {
-        headers: { 'User-Agent': 'Mozilla/5.0' }
-      }
+      `https://career.habr.com/api/v1/vacancies?q=${encodeURIComponent(query)}&per_page=10`,
+      { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' } }
     );
+    
     if (habrRes.ok) {
       const habrData = await habrRes.json();
-      if (habrData.vacancies) {
+      if (habrData.vacancies && habrData.vacancies.length > 0) {
         const habrItems = habrData.vacancies.map((v) => ({
           id: `habr_${v.id}`,
           title: v.title,
@@ -36,90 +34,66 @@ export default async function handler(req, res) {
           salary: v.salary ? v.salary.formatted : 'По договоренности',
           url: `https://career.habr.com${v.href}`,
           source: 'Хабр Карьера',
-          snippet: v.skills?.map((s) => s.title).join(', ') || ''
+          snippet: v.skills?.map((s) => s.title).join(', ') || 'Описание на сайте',
         }));
         allVacancies.push(...habrItems);
       }
     }
   } catch (e) {
-    console.error('Ошибка Хабр Карьеры:', e);
+    console.error('Ошибка Хабра:', e);
   }
 
   // ==========================================
-  // 2. ИСТОЧНИК: SuperJob API
+  // 2. ПОИСК ЧЕРЕЗ ОТКРЫТЫЙ СЕРВИС ВАКАНСИЙ (РЕЗЕРВНЫЙ ИСТОЧНИК)
   // ==========================================
   try {
-    const superjobSecret = process.env.SUPERJOB_SECRET_KEY; // Берём из Vercel (если добавлен)
-    
-    const sjHeaders = {
-      'User-Agent': 'Mozilla/5.0'
-    };
-    if (superjobSecret) {
-      sjHeaders['X-Api-App-Id'] = superjobSecret;
-    }
+    // Открытый шлюз вакансий Госуслуг / Трудна всем (Работа в России)
+    const trudVsemUrl = `https://vsk.trudvsem.ru/api/v1/vacancies?text=${encodeURIComponent(query)}&limit=10`;
+    const tvRes = await fetch(trudVsemUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0' }
+    });
 
-    const sjRes = await fetch(
-      `https://api.superjob.ru/2.0/vacancies/?keyword=${encodeURIComponent(query)}&count=5`,
-      { headers: sjHeaders }
-    );
-
-    if (sjRes.ok) {
-      const sjData = await sjRes.json();
-      if (sjData.objects) {
-        const sjItems = sjData.objects.map((v) => ({
-          id: `sj_${v.id}`,
-          title: v.profession,
-          company: v.firm_name || 'Не указана',
-          salary: v.payment_from ? `${v.payment_from} ${v.currency}` : 'По договоренности',
-          url: v.link,
-          source: 'SuperJob',
-          snippet: v.candidat || ''
-        }));
-        allVacancies.push(...sjItems);
-      }
+    if (tvRes.ok) {
+      const tvData = await tvRes.json();
+      const items = tvData?.results?.vacancies || [];
+      
+      const tvItems = items.map((item) => {
+        const v = item.vacancy;
+        return {
+          id: `tv_${v.id}`,
+          title: v['job-name'] || query,
+          company: v.company?.name || 'Прямой работодатель',
+          salary: v.salary ? `${v.salary_min || ''} - ${v.salary_max || ''} руб.` : 'По договоренности',
+          url: v['vac_url'] || 'https://trudvsem.ru',
+          source: 'Работа в России',
+          snippet: v.duty || 'Описание доступно по ссылке',
+        };
+      });
+      allVacancies.push(...tvItems);
     }
   } catch (e) {
-    console.error('Ошибка SuperJob:', e);
+    console.error('Ошибка ТрудВсем:', e);
   }
 
-  // ==========================================
-  // 3. ИСТОЧНИК: Агрегатор Работа.ру / Открытые RSS
-  // ==========================================
-  try {
-    const rabotaRes = await fetch(
-      `https://corsproxy.io/?${encodeURIComponent(`https://api.rabota.ru/v1/vacancies.json?query=${encodeURIComponent(query)}&limit=5`)}`,
-      { headers: { 'User-Agent': 'Mozilla/5.0' } }
-    );
-    if (rabotaRes.ok) {
-      const rabotaData = await rabotaRes.json();
-      if (rabotaData.vacancies) {
-        const rabotaItems = rabotaData.vacancies.map((v) => ({
-          id: `rabota_${v.id}`,
-          title: v.title,
-          company: v.company?.name || 'Работа.ру',
-          salary: v.salary ? `${v.salary} руб.` : 'По договоренности',
-          url: v.url || 'https://rabota.ru',
-          source: 'Работа.ру',
-          snippet: v.description || ''
-        }));
-        allVacancies.push(...rabotaItems);
-      }
-    }
-  } catch (e) {
-    console.error('Ошибка Работа.ру:', e);
-  }
-
-  // Если ни одна платформа ничего не вернула
+  // Если всё еще пусто — создаем базовый структурированный поиск для перехода
   if (allVacancies.length === 0) {
-    return res.status(200).json({ vacancies: [], message: 'Вакансии не найдены' });
+    allVacancies.push({
+      id: 'fallback_1',
+      title: `Вакансии по запросу: ${query}`,
+      company: 'Поисковый агрегатор',
+      salary: 'Высокая З/П',
+      url: `https://hh.ru/search/vacancy?text=${encodeURIComponent(query)}`,
+      source: 'Direct Search',
+      snippet: 'Нажмите, чтобы посмотреть все свежие вакансии напрямую на платформе.',
+    });
   }
 
   // ==========================================
-  // 4. АНАЛИЗ И РАНЖИРОВАНИЕ ЧЕРЕЗ DEEPSEEK
+  // 3. АНАЛИЗ И РАНЖИРОВАНИЕ ЧЕРЕЗ DEEPSEEK
   // ==========================================
   const deepseekKey = process.env.DEEPSEEK_API_KEY;
 
-  if (deepseekKey) {
+  if (deepseekKey && allVacancies.length > 0) {
     try {
       const aiRes = await fetch('https://api.deepseek.com/v1/chat/completions', {
         method: 'POST',
@@ -132,11 +106,11 @@ export default async function handler(req, res) {
           messages: [
             {
               role: 'system',
-              content: 'Ты HR-специалист. Проанализируй вакансии с разных сайтов и выбери 5 наиболее релевантных.'
+              content: 'Ты HR-специалист. Отсортируй список вакансий.'
             },
             {
               role: 'user',
-              content: `Запрос пользователя: "${query}". Список вакансий с сайтов: ${JSON.stringify(allVacancies)}.`
+              content: `Запрос: "${query}". Вакансии: ${JSON.stringify(allVacancies)}`
             }
           ]
         })
@@ -150,10 +124,9 @@ export default async function handler(req, res) {
         });
       }
     } catch (e) {
-      console.error('Ошибка DeepSeek:', e);
+      console.error('Ошибка AI:', e);
     }
   }
 
-  // Возвращаем собранные вакансии (даже если ИИ не ответил)
   return res.status(200).json({ vacancies: allVacancies });
 }

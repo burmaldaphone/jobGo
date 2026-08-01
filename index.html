@@ -85,4 +85,193 @@
     .tilt-btn:hover .shine { transform: rotate(20deg) translateX(30%); }
     .tilt-btn .btn-text { position: relative; z-index: 2; }
     .autocomplete-dropdown {
-      position: absolute; top: 100%; left: 0; right: 0;
+      position: absolute; top: 100%; left: 0; right: 0; z-index: 100; margin-top: 6px;
+      background: rgba(28,28,30,0.97);
+      backdrop-filter: blur(30px) saturate(180%); -webkit-backdrop-filter: blur(30px) saturate(180%);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; overflow: hidden;
+      max-height: 240px; overflow-y: auto; display: none;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05);
+    }
+    .autocomplete-dropdown.active { display: block; }
+    .autocomplete-item {
+      padding: 12px 18px; cursor: pointer; transition: background 0.12s ease, color 0.12s ease;
+      font-size: 15px; color: var(--text); border-bottom: 1px solid var(--separator);
+    }
+    .autocomplete-item:last-child { border-bottom: none; }
+    .autocomplete-item:hover, .autocomplete-item.highlighted {
+      background: rgba(0,122,255,0.1); color: var(--accent-light);
+    }
+    .form-input {
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
+      color: var(--text); border-radius: 14px; padding: 13px 16px; font-size: 16px;
+      font-family: inherit; width: 100%; transition: border-color 0.2s, box-shadow 0.2s, background 0.2s; outline: none;
+    }
+    .form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(0,122,255,0.1); background: rgba(255,255,255,0.06); }
+    .form-input::placeholder { color: var(--text-muted); }
+    .form-select {
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
+      color: var(--text); border-radius: 14px; padding: 13px 40px 13px 16px; font-size: 16px;
+      font-family: inherit; width: 100%; appearance: none; -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23636366' d='M5 6L0 0h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 14px center;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s; outline: none; cursor: pointer;
+    }
+    .form-select:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(0,122,255,0.1); background-color: rgba(255,255,255,0.06); }
+    .form-select option { background-color: #1c1c1e; color: var(--text); padding: 8px; }
+    .badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 9999px; font-size: 11px; font-weight: 600; letter-spacing: 0.02em; }
+    .badge-remote { background: rgba(52,199,89,0.15); color: #34c759; border: 1px solid rgba(52,199,89,0.15); }
+    .badge-office { background: rgba(0,122,255,0.15); color: #5ac8fa; border: 1px solid rgba(0,122,255,0.15); }
+    .badge-mixed { background: rgba(255,215,0,0.12); color: #ffd60a; border: 1px solid rgba(255,215,0,0.15); }
+    .btn-respond {
+      background: linear-gradient(135deg, #007aff 0%, #0056b3 100%); color: #fff; font-weight: 600;
+      border-radius: 12px; padding: 11px 22px; font-size: 14px; font-family: inherit;
+      transition: transform 0.15s ease, box-shadow 0.15s ease; border: none; cursor: pointer;
+    }
+    .btn-respond:hover { transform: scale(1.03); box-shadow: 0 4px 20px rgba(0,122,255,0.3); }
+    .btn-respond:active { transform: scale(0.97); }
+    .vacancy-card {
+      background: var(--card); backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid var(--glass-border); border-radius: 18px; padding: 20px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    .vacancy-card:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.1); }
+    .ai-card {
+      background: linear-gradient(135deg, rgba(0,122,255,0.07) 0%, rgba(88,86,214,0.07) 100%);
+      backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid rgba(0,122,255,0.15); border-radius: 20px;
+    }
+    .toast {
+      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(120px);
+      background: rgba(28,28,30,0.95); backdrop-filter: blur(30px) saturate(180%);
+      -webkit-backdrop-filter: blur(30px) saturate(180%);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 18px; padding: 14px 28px;
+      font-size: 15px; z-index: 9999; transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);
+      pointer-events: none; color: var(--text); box-shadow: 0 12px 48px rgba(0,0,0,0.5);
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .gradient-text {
+      background: linear-gradient(135deg, #007aff 0%, #5ac8fa 50%, #34c759 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .hero-glow { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.3; pointer-events: none; }
+    .dot-pulse { animation: dotPulse 1.4s infinite ease-in-out both; }
+    .dot-pulse:nth-child(1) { animation-delay: -0.32s; }
+    .dot-pulse:nth-child(2) { animation-delay: -0.16s; }
+    .dot-pulse:nth-child(3) { animation-delay: 0s; }
+    @keyframes dotPulse { 0%,80%,100% { transform: scale(0); opacity: 0.4; } 40% { transform: scale(1); opacity: 1; } }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-fade-in-up { animation: fadeInUp 0.45s cubic-bezier(0.25,0.46,0.45,0.94) forwards; }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    @media (max-width: 640px) { .tilt-btn { width: 100%; } }
+  </style>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { apple: { bg: '#000000', card: '#1c1c1e', accent: '#007aff', accentLight: '#5ac8fa', text: '#f2f2f7', secondary: '#8e8e93', muted: '#636366', success: '#34c759', danger: '#ff3b30' } } } } }
+  </script>
+</head>
+<body class="min-h-screen pb-10">
+  <div class="fixed inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+    <div class="hero-glow" style="background:rgba(0,122,255,0.1);top:-120px;left:-80px;width:350px;height:350px;"></div>
+    <div class="hero-glow" style="background:rgba(88,86,214,0.07);bottom:-180px;right:-80px;width:300px;height:300px;"></div>
+    <div class="hero-glow" style="background:rgba(0,122,255,0.04);top:40%;left:50%;width:400px;height:400px;transform:translate(-50%,-50%);"></div>
+  </div>
+  <div class="relative z-10 max-w-lg mx-auto px-5 pt-8 pb-6">
+    <header class="flex items-center justify-between mb-10">
+      <div>
+        <h1 class="text-3xl font-bold tracking-tight" style="letter-spacing:-0.02em;"><span class="gradient-text">JobGo</span></h1>
+        <p class="text-xs mt-1.5" style="color:var(--text-secondary);">Поиск вакансий с AI-анализом</p>
+      </div>
+      <div class="w-11 h-11 rounded-2xl flex items-center justify-center" style="background:var(--glass);border:1px solid var(--glass-border);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent-light);"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      </div>
+    </header>
+    <div class="space-y-4 mb-7">
+      <div class="filter-card">
+        <label class="filter-label">Профессия</label>
+        <div class="relative">
+          <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 z-10" style="color:var(--text-muted);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+          <input type="text" id="professionInput" placeholder="Например: Frontend разработчик" class="form-input pl-12 bg-transparent border-none" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false">
+          <div id="autocompleteDropdown" class="autocomplete-dropdown" role="listbox"></div>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div class="filter-card">
+          <label class="filter-label">Город</label>
+          <select id="citySelect" class="form-select bg-transparent border-none py-2 text-sm">
+            <option value="" disabled selected class="bg-apple-card">Выберите город</option>
+            <option value="Москва" class="bg-apple-card">Москва</option>
+            <option value="Санкт-Петербург" class="bg-apple-card">СПб</option>
+            <option value="Казань" class="bg-apple-card">Казань</option>
+            <option value="Екатеринбург" class="bg-apple-card">Екатеринбург</option>
+            <option value="__custom__" class="bg-apple-card">Другой город</option>
+          </select>
+          <input type="text" id="cityCustomInput" class="form-input mt-2 bg-transparent border-none text-sm py-2 hidden" placeholder="Введите город">
+        </div>
+        <div class="filter-card">
+          <label class="filter-label">Зарплата</label>
+          <select id="salarySelect" class="form-select bg-transparent border-none py-2 text-sm">
+            <option value="" disabled selected class="bg-apple-card">Выберите</option>
+            <option value="50000" class="bg-apple-card">От 50k ₽</option>
+            <option value="100000" class="bg-apple-card">От 100k ₽</option>
+            <option value="150000" class="bg-apple-card">От 150k ₽</option>
+            <option value="0" class="bg-apple-card">Любая</option>
+            <option value="__custom__" class="bg-apple-card">Своя сумма</option>
+          </select>
+          <input type="number" id="customSalaryInput" class="form-input mt-2 bg-transparent border-none text-sm py-2 hidden" placeholder="Мин. сумма в ₽" min="0">
+        </div>
+      </div>
+      <div class="filter-card">
+        <label class="filter-label">Формат работы</label>
+        <select id="scheduleSelect" class="form-select bg-transparent border-none py-2 text-sm">
+          <option value="" class="bg-apple-card">Любой формат</option>
+          <option value="remote" class="bg-apple-card">Удалённо</option>
+          <option value="office" class="bg-apple-card">В офисе</option>
+        </select>
+      </div>
+      <button id="searchBtn" class="tilt-btn w-full py-4 rounded-2xl font-bold text-base tracking-wide relative z-10" style="background:linear-gradient(135deg,#007aff 0%,#0056b3 100%);box-shadow:0 4px 24px rgba(0,122,255,0.25),inset 0 1px 0 rgba(255,255,255,0.15);">
+        <span class="shine"></span>
+        <span class="btn-text relative z-10 flex items-center justify-center gap-2" style="color:#fff;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          Найти вакансии
+        </span>
+      </button>
+    </div>
+    <div id="aiAnalysisBlock" class="ai-card rounded-2xl p-5 mb-6 hidden">
+      <div class="flex items-center gap-3 mb-3">
+        <span class="text-xl">✨</span>
+        <h3 class="font-semibold text-sm" style="color:var(--accent-light);">Анализ AI-ассистента</h3>
+      </div>
+      <p id="aiAnalysisText" class="text-sm leading-relaxed" style="color:rgba(242,242,247,0.85);"></p>
+    </div>
+    <div id="loadingBlock" class="hidden flex flex-col items-center justify-center py-16">
+      <div class="flex gap-2 mb-4">
+        <div class="w-2.5 h-2.5 rounded-full" style="background:var(--accent);"></div>
+        <div class="w-2.5 h-2.5 rounded-full" style="background:var(--accent);"></div>
+        <div class="w-2.5 h-2.5 rounded-full" style="background:var(--accent);"></div>
+      </div>
+      <p class="text-sm" style="color:var(--text-secondary);">Ищем вакансии...</p>
+    </div>
+    <div id="errorBlock" class="hidden glass rounded-2xl p-5 mb-6 text-center">
+      <svg class="w-10 h-10 mx-auto mb-3" style="color:var(--danger);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path></svg>
+      <p class="text-sm" style="color:var(--text-secondary);" id="errorText">Произошла ошибка. Попробуйте ещё раз.</p>
+    </div>
+    <div id="resultsHeader" class="hidden flex items-center justify-between mb-4 px-1">
+      <h2 class="text-lg font-semibold" style="letter-spacing:-0.01em;">Найдено вакансий</h2>
+      <span id="resultsCount" class="text-sm" style="color:var(--text-secondary);"></span>
+    </div>
+    <div id="vacanciesList" class="space-y-3"></div>
+    <div id="emptyState" class="hidden flex flex-col items-center justify-center py-20 text-center">
+      <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style="background:var(--glass);border:1px solid var(--glass-border);">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--text-muted);"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+      </div>
+      <p class="text-sm" style="color:var(--text-secondary);">Начните поиск вакансий</p>
+      <p class="text-xs mt-1.5" style="color:var(--text-muted);">Введите профессию и нажмите «Найти»</p>
+    </div>
+  </div>
+  <div id="toast" class="toast"></div>
+  <script>
+(function(){var tg=null;try{tg=window.Telegram&&window.Telegram.WebApp}catch(e){tg=null}if(tg){tg.ready();tg.expand();tg.setHeaderColor('#000000');tg.setBackgroundColor('#000000')}var professionInput=document.getElementById('professionInput');var autocompleteDropdown=document.getElementById('autocompleteDropdown');var citySelect=document.getElementById('citySelect');var cityCustomInput=document.getElementById('cityCustomInput');var salarySelect=document.getElementById('salarySelect');var customSalaryInput=document.getElementById('customSalaryInput');var scheduleSelect=document.getElementById('scheduleSelect');var searchBtn=document.getElementById('searchBtn');var aiAnalysisBlock=document.getElementById('aiAnalysisBlock');var aiAnalysisText=document.getElementById('aiAnalysisText');var loadingBlock=document.getElementById('loadingBlock');var errorBlock=document.getElementById('errorBlock');var errorText=document.getElementById('errorText');var resultsHeader=document.getElementById('resultsHeader');var resultsCount=document.getElementById('resultsCount');var vacanciesList=document.getElementById('vacanciesList');var emptyState=document.getElementById('emptyState');var toastEl=document.getElementById('toast');var PROFESSION_SUGGESTIONS=['Разработчик','Frontend разработчик','Backend разработчик','Fullstack разработчик','React разработчик','Vue разработчик','Angular разработчик','Node.js разработчик','Python разработчик','Java разработчик','Go разработчик','Rust разработчик','PHP разработчик','Ruby разработчик','Swift разработчик','Kotlin разработчик','Dart разработчик','C++ разработчик','C# разработчик','DevOps инженер','DevSecOps инженер','SRE инженер','Data Scientist','ML инженер','Data Engineer','Аналитик данных','Product Manager','UX Designer','UI Designer','UX Researcher','Веб-дизайнер','Мобильный разработчик','iOS разработчик','Android разработчик','Flutter разработчик','React Native разработчик','QA инженер','Тестировщик','Manual QA','Automation QA','Архитектор ПО','System Architect','Технический лидер','Tech Lead','Scrum Master','Team Lead','Engineering Manager','CTO','Аналитик','Бизнес-аналитик','Системный аналитик','Тимлид','Маркетолог','SMM специалист','Копирайтер','Контент-менеджер','HR','HR Manager','Рекрутер','HRBP','Менеджер проекта','Project Manager','PM','Старший менеджер','Финансовый аналитик','Бухгалтер','Юрист','Администратор','Менеджер по продажам','Sales Manager','Account Manager','Менеджер по работе с клиентами','Техподдержка','Support Engineer','Helpdesk','Customer Success','Графический дизайнер','Иллюстратор','Motion Designer','3D художник','Видеомонтажёр','Видеограф','Контент-разработчик','Блогер','SEO специалист','SMM менеджер','Таргетолог','Контекстная реклама','Управление персоналом','Кадровый менеджер','Начальник отдела','Директор'];var cityCustomVisible=false;var customSalaryVisible=false;citySelect.addEventListener('change',function(){if(citySelect.value==='__custom__'){cityCustomVisible=true;cityCustomInput.classList.remove('hidden');cityCustomInput.focus()}else{cityCustomVisible=false;cityCustomInput.classList.add('hidden')}});salarySelect.addEventListener('change',function(){if(salarySelect.value==='__custom__'){customSalaryVisible=true;customSalaryInput.classList.remove('hidden');customSalaryInput.focus()}else{customSalaryVisible=false;customSalaryInput.classList.add('hidden')}});function getCityValue(){if(cityCustomVisible)return cityCustomInput.value.trim();return citySelect.value}function getSalaryValue(){if(customSalaryVisible){var val=customSalaryInput.value.trim();return val?String(parseInt(val,10)):''}return salarySelect.value}var autocompleteActiveIndex=-1;function showAutocomplete(items){if(items.length===0){hideAutocomplete();return}autocompleteDropdown.innerHTML='';items.forEach(function(item,index){var div=document.createElement('div');div.className='autocomplete-item';div.textContent=item;div.setAttribute('role','option');div.setAttribute('data-index',index);div.addEventListener('click',function(){professionInput.value=item;hideAutocomplete();professionInput.focus()});autocompleteDropdown.appendChild(div)});autocompleteDropdown.classList.add('active');professionInput.setAttribute('aria-expanded','true');autocompleteActiveIndex=-1}function hideAutocomplete(){autocompleteDropdown.classList.remove('active');professionInput.setAttribute('aria-expanded','false');autocompleteActiveIndex=-1;var items=autocompleteDropdown.querySelectorAll('.autocomplete-item');items.forEach(function(el){el.classList.remove('highlighted')})}professionInput.addEventListener('input',function(){var query=professionInput.value.trim().toLowerCase();if(query.length===0){hideAutocomplete();return}var filtered=PROFESSION_SUGGESTIONS.filter(function(item){return item.toLowerCase().indexOf(query)!==-1}).slice(0,8);showAutocomplete(filtered)});professionInput.addEventListener('keydown',function(e){var items=autocompleteDropdown.querySelectorAll('.autocomplete-item');if(e.key==='ArrowDown'){e.preventDefault();autocompleteActiveIndex=Math.min(autocompleteActiveIndex+1,items.length-1);updateAutocompleteActive(items)}else if(e.key==='ArrowUp'){e.preventDefault();autocompleteActiveIndex=Math.max(autocompleteActiveIndex-1,0);updateAutocompleteActive(items)}else if(e.key==='Enter'){e.preventDefault();if(autocompleteActiveIndex>=0&&items[autocompleteActiveIndex]){professionInput.value=items[autocompleteActiveIndex].textContent}hideAutocomplete()}else if(e.key==='Escape'){hideAutocomplete()}});function updateAutocompleteActive(items){items.forEach(function(el,idx){el.classList.toggle('highlighted',idx===autocompleteActiveIndex)});if(items[autocompleteActiveIndex]){items[autocompleteActiveIndex].scrollIntoView({block:'nearest'})}}document.addEventListener('click',function(e){if(!professionInput.contains(e.target)&&!autocompleteDropdown.contains(e.target)){hideAutocomplete()}});function initTiltButton(){searchBtn.addEventListener('mousemove',function(e){var rect=searchBtn.getBoundingClientRect();var x=(e.clientX-rect.left)/rect.width*100;var y=(e.clientY-rect.top)/rect.height*100;searchBtn.style.setProperty('--mx',x+'%');searchBtn.style.setProperty('--my',y+'%');var rotateX=(y-50)*0.35;var rotateY=(x-50)*-0.35;searchBtn.style.transform='perspective(900px) rotateX('+rotateX+'deg) rotateY('+rotateY+'deg) scale(1.02)'});searchBtn.addEventListener('mouseleave',function(){searchBtn.style.transform='perspective(900px) rotateX(0deg) rotateY(0deg) scale(1)';searchBtn.style.setProperty('--mx','50%');searchBtn.style.setProperty('--my','50%')});searchBtn.addEventListener('touchmove',function(e){var touch=e.touches[0];var rect=searchBtn.getBoundingClientRect();var x=(touch.clientX-rect.left)/rect.width*100;var y=(touch.clientY-rect.top)/rect.height*100;searchBtn.style.setProperty('--mx',x+'%');searchBtn.style.setProperty('--my',y+'%')},{passive:true});searchBtn.addEventListener('touchend',function(){searchBtn.style.transform='perspective(900px) rotateX(0deg) rotateY(0deg) scale(1)'})}initTiltButton();function showLoading(){loadingBlock.classList.remove('hidden');errorBlock.classList.add('hidden');aiAnalysisBlock.classList.add('hidden');vacanciesList.innerHTML='';resultsHeader.classList.add('hidden');emptyState.classList.add('hidden')}function hideLoading(){loadingBlock.classList.add('hidden')}function showError(msg){hideLoading();errorBlock.classList.remove('hidden');errorText.textContent=msg||'Произошла ошибка. Попробуйте ещё раз.'}function showToast(msg){toastEl.textContent=msg;toastEl.classList.add('show');setTimeout(function(){toastEl.classList.remove('show')},2500)}function renderVacancyCard(vacancy,index){var scheduleBadge='';if(vacancy.schedule&&vacancy.schedule.toLowerCase().indexOf('удалённ')!==-1){scheduleBadge='<span class="badge badge-remote">Удалённо</span>'}else if(vacancy.schedule&&vacancy.schedule.toLowerCase().indexOf('офис')!==-1){scheduleBadge='<span class="badge badge-office">В офисе</span>'}else if(vacancy.schedule){scheduleBadge='<span class="badge badge-mixed">'+escapeHtml(vacancy.schedule)+'</span>'}var card=document.createElement('div');card.className='vacancy-card animate-fade-in-up';card.style.animationDelay=(index*70)+'ms';card.innerHTML='<div class="flex items-start justify-between gap-3 mb-3"><div class="flex-1 min-w-0"><h3 class="font-semibold text-[15px] leading-snug truncate" style="letter-spacing:-0.01em;">'+escapeHtml(vacancy.title)+'</h3><p class="text-sm mt-1 truncate" style="color:var(--text-secondary);">'+escapeHtml(vacancy.company)+'</p></div><span class="text-sm font-semibold whitespace-nowrap flex-shrink-0" style="color:var(--accent-light);">'+escapeHtml(vacancy.salary)+'</span></div><div class="flex items-center gap-2 mb-3 flex-wrap">'+(vacancy.area?'<span class="text-xs" style="color:var(--text-muted);">'+escapeHtml(vacancy.area)+'</span>':'')+(scheduleBadge?'<span class="text-xs" style="color:var(--text-muted);">·</span>'+scheduleBadge:'')+'</div>'+(vacancy.snippet.requirement?'<p class="text-xs mb-3 line-clamp-2" style="color:var(--text-secondary);">'+escapeHtml(vacancy.snippet.requirement)+'</p>':'')+'<div class="flex gap-2"><button class="btn-respond flex-1" data-url="'+escapeHtml(vacancy.url)+'">Откликнуться</button><a href="'+escapeHtml(vacancy.url)+'" target="_blank" rel="noopener noreferrer" class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors" style="background:var(--glass);border:1px solid var(--glass-border);" aria-label="Открыть вакансию"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-secondary);"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a></div>';var respondBtn=card.querySelector('.btn-respond');respondBtn.addEventListener('click',function(){var url=this.getAttribute('data-url');if(url){if(tg&&tg.openLink){tg.openLink(url)}else{window.open(url,'_blank')}showToast('Отклик отправлен!')}});return card}function escapeHtml(str){if(!str)return'';var div=document.createElement('div');div.appendChild(document.createTextNode(str));return div.innerHTML}function renderVacancies(vacancies){hideLoading();vacanciesList.innerHTML='';if(vacancies.length===0){emptyState.classList.remove('hidden');resultsHeader.classList.add('hidden');return}emptyState.classList.add('hidden');resultsHeader.classList.remove('hidden');resultsCount.textContent=vacancies.length+' вакансий';var fragment=document.createDocumentFragment();vacancies.forEach(function(v,i){fragment.appendChild(renderVacancyCard(v,i))});vacanciesList.appendChild(fragment)}async function searchVacancies(){var query=professionInput.value.trim();if(!query){showToast('Введите профессию или должность');professionInput.focus();return}var city=getCityValue();var salary=getSalaryValue();var schedule=scheduleSelect.value;var params=new URLSearchParams();if(query)params.set('query',query);if(city)params.set('city',city);if(salary&&salary!=='0')params.set('salary',salary);if(schedule)params.set('schedule',schedule);showLoading();try{var response=await fetch('/api/vacancies?'+params.toString());if(!response.ok){throw new Error('Ошибка сервера: '+response.status)}var data=await response.json();if(data.aiAnalysis){aiAnalysisText.textContent=data.aiAnalysis;aiAnalysisBlock.classList.remove('hidden')}else{aiAnalysisBlock.classList.add('hidden')}renderVacancies(data.vacancies||[])}catch(err){console.error('Search error:',err);showError('Не удалось загрузить вакансии. Проверьте подключение к интернету.')}}searchBtn.addEventListener('click',searchVacancies);professionInput.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();hideAutocomplete();searchVacancies()}});if(tg&&tg.themeParams){try{var bgColor=tg.themeParams.bg_color||'#000000';document.body.style.background=bgColor}catch(e){}}})();
+  </script>
+</body>
+</html>

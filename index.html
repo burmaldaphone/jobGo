@@ -38,7 +38,7 @@
       pointer-events: none;
     }
     .balatro-btn:active {
-      transform: scale(0.96) translateZ(-10px) !important;
+      transform: scale(0.97) translateZ(-5px) !important;
       box-shadow: 0 4px 10px -2px rgba(0, 0, 0, 0.2);
     }
   </style>
@@ -117,7 +117,7 @@
 
     let rawVacancies = [];
 
-    // --- Balatro 3D Tilt Effect ---
+    // --- Balatro 3D Tilt Effect (Смягченный) ---
     const btn = document.getElementById('balatroBtn');
     
     function handleMove(e) {
@@ -131,10 +131,13 @@
       const centerX = rect.width / 2;
       const centerY = rect.height / 2;
       
-      const rotateX = ((y - centerY) / centerY) * -15; 
-      const rotateY = ((x - centerX) / centerX) * 15;
+      // Наклон вверх/вниз
+      const rotateX = ((y - centerY) / centerY) * -6; 
 
-      btn.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+      // Наклон влево/вправо (мягкий угол 5 градусов)
+      const rotateY = ((x - centerX) / centerX) * 5; 
+
+      btn.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.01, 1.01, 1.01)`;
     }
 
     function handleReset() {

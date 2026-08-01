@@ -8,30 +8,33 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  const { query, area = 1 } = req.query; // area 1 — Москва (по умолчанию)
+  const { query, area = 1 } = req.query;
 
   if (!query) {
     return res.status(400).json({ error: 'Укажите поисковый запрос' });
   }
 
   try {
-    // 1. Делаем запрос к HH API с правильным User-Agent (устраняет ошибку 403)
-    const hhResponse = await fetch(
-      `https://api.hh.ru/vacancies?text=${encodeURIComponent(query)}&area=${area}&per_page=10`,
-      {
-        headers: {
-          'User-Agent': 'JobGoApp/1.0 (contact@jobgo.app)',
-        },
-      }
-    );
+    // 1. Запрос к HeadHunter API
+    const hhUrl = `https://api.hh.ru/vacancies?text=${encodeURIComponent(query)}&area=${area}&per_page=10`;
+    const hhResponse = await fetch(hhUrl, {
+      headers: {
+        'User-Agent': 'JobGoApp/1.0 (contact@jobgo.app)',
+        'Accept': 'application/json'
+      },
+    });
 
     if (!hhResponse.ok) {
-      throw new Error(`Ошибка HH: ${hhResponse.status}`);
+      return res.status(hhResponse.status).json({ error: `Ошибка HH: ${hhResponse.status}` });
     }
 
     const hhData = await hhResponse.json();
 
-    // Форматируем список вакансий для DeepSeek
+    if (!hhData.items || hhData.items.length === 0) {
+      return res.status(200).json({ vacancies: [] });
+    }
+
+    // Форматируем список вакансий
     const vacanciesList = hhData.items.map((item) => ({
       id: item.id,
       title: item.name,
@@ -43,47 +46,51 @@ export default async function handler(req, res) {
       snippet: item.snippet?.requirement || '',
     }));
 
-    // 2. Вшиваем DeepSeek API ключ из переменных окружения Vercel
+    // 2. Обработка через DeepSeek (если ключ задан)
     const apiKey = process.env.DEEPSEEK_API_KEY;
 
     if (!apiKey) {
-      // Если ключ ещё не настроен, возвращаем вакансии без обработки AI
-      return res.status(200).json({ vacancies: vacanciesList, aiAnalysed: false });
+      // Если ключа нет, просто отдаем найденные вакансии
+      return res.status(200).json({ vacancies: vacanciesList });
     }
 
-    // Запрос к DeepSeek для фильтрации и оценки вакансий
-    const deepseekResponse = await fetch('https://api.deepseek.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages: [
-          {
-            role: 'system',
-            content: 'Ты HR-аналитик. Оцени вакансии по запросу пользователя от 1 до 100% и дай краткий вывод в 1 предложение, почему вакансия подходит.',
-          },
-          {
-            role: 'user',
-            content: `Запрос пользователя: "${query}". Вакансии: ${JSON.stringify(vacanciesList)}. 
-Верни ответ strictly в формате JSON массива объектов с полями: id, score (число), reason (строка).`,
-          },
-        ],
-      }),
-    });
+    try {
+      const deepseekResponse = await fetch('https://api.deepseek.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages: [
+            {
+              role: 'system',
+              content: 'Ты HR-специалист. Оцени релевантность вакансий.',
+            },
+            {
+              role: 'user',
+              content: `Пользователь ищет: "${query}". Вот вакансии: ${JSON.stringify(vacanciesList)}. Оцени их.`,
+            },
+          ],
+        }),
+      });
 
-    const aiData = await deepseekResponse.json();
-    
-    // Возвращаем результат клиенту
-    return res.status(200).json({
-      vacancies: vacanciesList,
-      aiAnalysis: aiData.choices?.[0]?.message?.content || null,
-      aiAnalysed: true
-    });
+      if (deepseekResponse.ok) {
+        const aiData = await deepseekResponse.json();
+        return res.status(200).json({
+          vacancies: vacanciesList,
+          aiAnalysis: aiData.choices?.[0]?.message?.content || null
+        });
+      }
+    } catch (aiErr) {
+      console.error('Ошибка DeepSeek:', aiErr);
+    }
+
+    // Если запрос к ИИ сбойнул, отдаем базовые вакансии без падения сервера
+    return res.status(200).json({ vacancies: vacanciesList });
 
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message || 'Внутренняя ошибка сервера' });
   }
 }

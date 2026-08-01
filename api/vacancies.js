@@ -1,4 +1,5 @@
 export default async function handler(req, res) {
+  // Настройка CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -14,13 +15,14 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Используем CORS-прокси для обхода гео-блокировки дата-центров Vercel со стороны HH
+    // Используем открытый прокси для обхода блокировок зарубежных IP Vercel со стороны HH
     const targetUrl = `https://api.hh.ru/vacancies?text=${encodeURIComponent(query)}&per_page=10`;
     const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
 
     const hhResponse = await fetch(proxyUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json'
       },
     });
 
@@ -34,6 +36,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ vacancies: [] });
     }
 
+    // Собираем результаты
     const vacanciesList = hhData.items.map((item) => ({
       id: item.id,
       title: item.name,
@@ -45,7 +48,7 @@ export default async function handler(req, res) {
       snippet: item.snippet?.requirement || item.snippet?.responsibility || '',
     }));
 
-    // Запрос к DeepSeek
+    // Проверка и оценка через DeepSeek (если DEEPSEEK_API_KEY добавлен в Vercel)
     const apiKey = process.env.DEEPSEEK_API_KEY;
 
     if (apiKey) {
@@ -59,8 +62,8 @@ export default async function handler(req, res) {
           body: JSON.stringify({
             model: 'deepseek-chat',
             messages: [
-              { role: 'system', content: 'Ты HR-помощник.' },
-              { role: 'user', content: `Найди соответствия для: ${query}` },
+              { role: 'system', content: 'Ты HR-специалист. Отсортируй вакансии и верни ТОП.' },
+              { role: 'user', content: `Запрос пользователя: "${query}". Подобранные вакансии: ${JSON.stringify(vacanciesList)}` },
             ],
           }),
         });

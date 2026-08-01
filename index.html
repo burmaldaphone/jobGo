@@ -42,13 +42,13 @@
       box-shadow: 0 4px 10px -2px rgba(0, 0, 0, 0.2);
     }
 
-    /* Subtle 3D Effect for Filter Tags */
+    /* Subtle 3D Effect for Filters */
     .filter-3d {
       perspective: 500px;
       transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
       box-shadow: 0 2px 5px rgba(0,0,0,0.04);
     }
-    .filter-3d:hover {
+    .filter-3d:focus-within, .filter-3d:hover {
       transform: scale(1.02) translateZ(4px);
       box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     }
@@ -64,52 +64,63 @@
   <div class="sticky top-0 z-50 glass-card px-5 py-4 mb-6 shadow-sm border-b border-gray-200/50">
     <div class="max-w-md mx-auto flex justify-between items-center">
       <h1 class="text-xl font-bold tracking-tight text-gray-900">JobGo</h1>
-      <span class="text-xs font-semibold px-2.5 py-1 bg-gray-200/60 text-gray-600 rounded-full">v2.1</span>
+      <span class="text-xs font-semibold px-2.5 py-1 bg-gray-200/60 text-gray-600 rounded-full">v2.4</span>
     </div>
   </div>
 
   <div class="max-w-md mx-auto px-4 space-y-5">
 
     <!-- Search Form & Filters -->
-    <div class="bg-white rounded-3xl p-4 shadow-sm border border-gray-100 space-y-3">
+    <div class="bg-white rounded-3xl p-4 shadow-sm border border-gray-100 space-y-3 relative">
       
-      <!-- Input -->
+      <!-- Input Profession with Autocomplete -->
       <div class="relative">
         <input 
           type="text" 
           id="searchInput" 
           placeholder="Например, Видеомонтажёр" 
+          autocomplete="off"
           class="w-full bg-gray-100/80 text-gray-900 text-sm rounded-2xl px-4 py-3.5 pl-10 focus:outline-none focus:ring-2 focus:ring-black/10 transition-all placeholder-gray-400 font-medium"
         />
         <svg class="w-5 h-5 absolute left-3.5 top-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
         </svg>
+
+        <!-- Autocomplete Suggestions Dropdown -->
+        <div id="suggestionsBox" class="hidden absolute left-0 right-0 top-full mt-2 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50 divide-y divide-gray-50">
+        </div>
       </div>
 
       <!-- Filters Grid -->
       <div class="grid grid-cols-2 gap-2 pt-1">
         
-        <!-- City Filter -->
-        <select id="cityFilter" onchange="applyFilters()" class="filter-3d bg-gray-100/90 text-xs font-semibold text-gray-700 rounded-xl px-3 py-2.5 border-0 focus:ring-0 cursor-pointer appearance-none">
-          <option value="all">🌆 Все города</option>
-          <option value="Москва">Москва</option>
-          <option value="Санкт-Петербург">Санкт-Петербург</option>
-          <option value="Казань">Казань</option>
-          <option value="Новосибирск">Новосибирск</option>
-        </select>
+        <!-- Custom City Input -->
+        <div class="filter-3d bg-gray-100/90 rounded-xl px-3 py-2 flex items-center">
+          <input 
+            type="text" 
+            id="cityFilter" 
+            placeholder="🌆 Город (любой)" 
+            oninput="applyFilters()"
+            class="w-full bg-transparent text-xs font-semibold text-gray-800 focus:outline-none placeholder-gray-500"
+          />
+        </div>
+
+        <!-- Custom Salary Input -->
+        <div class="filter-3d bg-gray-100/90 rounded-xl px-3 py-2 flex items-center">
+          <input 
+            type="number" 
+            id="salaryFilter" 
+            placeholder="💰 Мин. зарплата (₽)" 
+            oninput="applyFilters()"
+            class="w-full bg-transparent text-xs font-semibold text-gray-800 focus:outline-none placeholder-gray-500"
+          />
+        </div>
 
         <!-- Remote / Office Filter -->
         <select id="typeFilter" onchange="applyFilters()" class="filter-3d bg-gray-100/90 text-xs font-semibold text-gray-700 rounded-xl px-3 py-2.5 border-0 focus:ring-0 cursor-pointer appearance-none">
-          <option value="all">💻 Формат работы</option>
+          <option value="all">💻 Любой формат</option>
           <option value="remote">🏠 Удалённо</option>
           <option value="office">🏢 В офисе / На месте</option>
-        </select>
-
-        <!-- Salary Filter -->
-        <select id="salaryFilter" onchange="applyFilters()" class="filter-3d bg-gray-100/90 text-xs font-semibold text-gray-700 rounded-xl px-3 py-2.5 border-0 focus:ring-0 cursor-pointer appearance-none">
-          <option value="all">💰 Любая зарплата</option>
-          <option value="specified">С указанным окладом</option>
-          <option value="100k">От 100 000 ₽</option>
         </select>
 
         <!-- Source Filter -->
@@ -152,21 +163,91 @@
     const tg = window.Telegram?.WebApp;
     if (tg) tg.expand();
 
-    // Random dynamic placeholder professions
-    const professions = [
+    // Database of popular professions for autocomplete
+    const professionDatabase = [
       "Видеомонтажёр",
+      "Видеооператор",
+      "Видеомейкер",
       "Motion Designer",
+      "2D Аниматор",
+      "3D Генералист",
+      "3D Моделлер",
       "Python-разработчик",
+      "Frontend-разработчик",
+      "Backend-разработчик",
+      "Fullstack-разработчик",
       "SMM-специалист",
+      "Контент-мейкер",
       "Графический дизайнер",
-      "3D-генералист",
+      "UI/UX Дизайнер",
       "Product Manager",
-      "Копирайтер"
+      "Project Manager",
+      "Копирайтер",
+      "Таргетолог",
+      "Маркетолог",
+      "Режиссёр монтажа",
+      "Звукорежиссёр",
+      "Иллюстратор"
     ];
 
+    const searchInput = document.getElementById("searchInput");
+    const suggestionsBox = document.getElementById("suggestionsBox");
+
+    // Random dynamic placeholder
     document.addEventListener("DOMContentLoaded", () => {
-      const randomProf = professions[Math.floor(Math.random() * professions.length)];
-      document.getElementById("searchInput").placeholder = `Например, ${randomProf}`;
+      const randomProf = professionDatabase[Math.floor(Math.random() * professionDatabase.length)];
+      searchInput.placeholder = `Например, ${randomProf}`;
+    });
+
+    // Autocomplete Logic
+    searchInput.addEventListener("input", () => {
+      const query = searchInput.value.trim().toLowerCase();
+
+      if (!query) {
+        suggestionsBox.classList.add("hidden");
+        return;
+      }
+
+      const matches = professionDatabase.filter(item => 
+        item.toLowerCase().includes(query)
+      );
+
+      if (matches.length === 0) {
+        suggestionsBox.classList.add("hidden");
+        return;
+      }
+
+      suggestionsBox.innerHTML = matches.map(item => `
+        <div 
+          onclick="selectSuggestion('${item}')"
+          class="px-4 py-3 text-xs font-semibold text-gray-700 hover:bg-gray-100/80 active:bg-gray-200/80 cursor-pointer flex items-center justify-between transition-colors">
+          <span>${item}</span>
+          <span class="text-[10px] text-gray-400 font-normal">Выбрать ↵</span>
+        </div>
+      `).join('');
+
+      suggestionsBox.classList.remove("hidden");
+    });
+
+    function selectSuggestion(value) {
+      searchInput.value = value;
+      suggestionsBox.classList.add("hidden");
+      searchJobs();
+    }
+
+    // Hide suggestions on click outside
+    document.addEventListener("click", (e) => {
+      if (!searchInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
+        suggestionsBox.classList.add("hidden");
+      }
+    });
+
+    // Trigger search on Enter key
+    searchInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        suggestionsBox.classList.add("hidden");
+        searchJobs();
+      }
     });
 
     let rawVacancies = [];
@@ -201,11 +282,10 @@
 
     // Search and Filter logic
     async function searchJobs() {
-      const input = document.getElementById('searchInput');
-      let query = input.value.trim();
+      let query = searchInput.value.trim();
       
       if (!query) {
-        query = input.placeholder.replace("Например, ", "");
+        query = searchInput.placeholder.replace("Например, ", "");
       }
 
       const vacanciesList = document.getElementById('vacanciesList');
@@ -253,19 +333,28 @@
     }
 
     function applyFilters() {
-      const city = document.getElementById('cityFilter').value;
+      const cityInput = document.getElementById('cityFilter').value.trim().toLowerCase();
+      const minSalaryInput = parseInt(document.getElementById('salaryFilter').value.trim(), 10);
       const type = document.getElementById('typeFilter').value;
-      const salary = document.getElementById('salaryFilter').value;
       const source = document.getElementById('sourceFilter').value;
 
       let filtered = [...rawVacancies];
 
-      // City Filter
-      if (city !== 'all') {
+      // Custom City Filter
+      if (cityInput) {
         filtered = filtered.filter(v => 
-          (v.snippet && v.snippet.toLowerCase().includes(city.toLowerCase())) ||
-          (v.title && v.title.toLowerCase().includes(city.toLowerCase()))
+          (v.snippet && v.snippet.toLowerCase().includes(cityInput)) ||
+          (v.title && v.title.toLowerCase().includes(cityInput))
         );
+      }
+
+      // Custom Min Salary Filter
+      if (!isNaN(minSalaryInput) && minSalaryInput > 0) {
+        filtered = filtered.filter(v => {
+          if (!v.salary) return false;
+          const nums = v.salary.replace(/\s/g, '').match(/\d+/g);
+          return nums && nums.some(n => parseInt(n, 10) >= minSalaryInput);
+        });
       }
 
       // Work Format Filter
@@ -278,17 +367,6 @@
         filtered = filtered.filter(v => 
           !(v.title + v.snippet).toLowerCase().includes('удален')
         );
-      }
-
-      // Salary Filter
-      if (salary === 'specified') {
-        filtered = filtered.filter(v => v.salary && !v.salary.includes('договоренности'));
-      } else if (salary === '100k') {
-        filtered = filtered.filter(v => {
-          if (!v.salary) return false;
-          const nums = v.salary.replace(/\s/g, '').match(/\d+/g);
-          return nums && nums.some(n => parseInt(n, 10) >= 100000);
-        });
       }
 
       // Source Filter

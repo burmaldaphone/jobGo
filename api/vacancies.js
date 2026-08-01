@@ -5,8 +5,48 @@
 // возвращает aiAnalysis: null, не ломая основной поиск.
 
 const HH_BASE_URL = "https://api.hh.ru/vacancies";
+const HH_AREAS_URL = "https://api.hh.ru/suggests/areas";
 const DEEPSEEK_URL = "https://api.deepseek.com/v1/chat/completions";
 const HH_USER_AGENT = "JobGoApp/1.0 (contact@jobgo.app)";
+
+// Известные ID регионов HH.ru — для них не нужен доп. запрос.
+const KNOWN_AREAS = {
+  "москва": "1",
+  "санкт-петербург": "2",
+  "спб": "2",
+  "казань": "88",
+  "екатеринбург": "3",
+};
+
+/**
+ * Пытается определить ID региона HH по названию города.
+ * Сначала смотрит в таблицу известных городов, затем — если не нашёл —
+ * обращается к suggests/areas HH.ru. Если ничего не найдено — вернёт null,
+ * и город будет добавлен как обычный текст в поисковый запрос (fallback).
+ */
+async function resolveAreaId(cityName) {
+  if (!cityName) return null;
+
+  const normalized = cityName.trim().toLowerCase();
+  if (KNOWN_AREAS[normalized]) {
+    return KNOWN_AREAS[normalized];
+  }
+
+  try {
+    const url = `${HH_AREAS_URL}?text=${encodeURIComponent(cityName)}`;
+    const response = await fetch(url, {
+      headers: { "User-Agent": HH_USER_AGENT, Accept: "application/json" },
+    });
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    const match = data?.items?.[0];
+    return match?.id || null;
+  } catch (err) {
+    console.error("resolveAreaId failed:", err?.message || err);
+    return null;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Утилиты
@@ -92,13 +132,22 @@ function setCorsHeaders(res) {
 // ---------------------------------------------------------------------------
 
 async function fetchVacanciesFromHH({ query, city, salary, schedule }) {
-  const searchText = [query, city].filter(Boolean).join(" ").trim();
-
   const params = new URLSearchParams();
   params.set("per_page", "30");
 
+  const areaId = await resolveAreaId(city);
+
+  // Город найден как регион HH -> используем area, текст остаётся чистым
+  // названием профессии (так поиск реально работает, а не возвращает пусто).
+  // Город не распознан -> подстраховываемся и всё же добавляем его в текст.
+  const searchText = areaId ? query : [query, city].filter(Boolean).join(" ").trim();
+
   if (searchText) {
     params.set("text", searchText);
+  }
+
+  if (areaId) {
+    params.set("area", areaId);
   }
 
   if (salary) {

@@ -39,6 +39,8 @@ function buildHhUrl(queryParams) {
   const schedule = queryParams.schedule;
   if (schedule === 'remote') {
     url.searchParams.set('schedule', 'remote');
+  } else if (schedule === 'office') {
+    url.searchParams.set('schedule', 'office');
   }
 
   return url.toString();
@@ -118,11 +120,6 @@ export default async function handler(req, res) {
   if (deepseekKey && vacancies.length > 0) {
     const query = queryParams.query || '';
     const topVacancies = vacancies.slice(0, 10);
-    const vacancySummaries = topVacancies
-      .map(function (v) {
-        return 'Название: ' + v.title + ', Компания: ' + v.company + ', Зарплата: ' + v.salary + ', Требования: ' + v.snippet.requirement;
-      })
-      .join('\n');
 
     const deepseekPrompt = 'Проанализируй эти 5-10 вакансий по запросу \'' + query + '\'. Дай емкое резюме на 2-3 предложения: средняя вилка зарплат, самые частые требования/навыки и совет соискателю. Напиши без лишнего текста, сразу суть.';
 

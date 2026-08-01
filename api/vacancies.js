@@ -1,85 +1,478 @@
-// api/vacancies.js
-export default async function handler(req, res) {
-  // Настройка заголовков для CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  try {
-    // Получаем параметры запроса, присланные из index.html
-    const { query, city, salary, schedule } = req.query;
-
-    if (!query) {
-      return res.status(400).json({ error: 'Укажите поисковый запрос' });
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>JobGo — Поиск вакансий</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+      background-color: #f5f5f7;
+      -webkit-font-smoothing: antialiased;
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
     }
 
-    // Базовый адрес API HeadHunter (per_page=50 - сколько вакансий вернуть)
-    let hhUrl = `https://api.hh.ru/vacancies?per_page=50`;
-
-    // Формируем поисковый текст: "профессия + город"
-    let searchText = query;
-    if (city) {
-      searchText += ` ${city}`; // HH хорошо понимает, когда город в тексте
+    /* 3D Balatro Main Button */
+    .balatro-container {
+      perspective: 1000px;
     }
-    hhUrl += `&text=${encodeURIComponent(searchText)}`;
-
-    // Фильтр по зарплате
-    if (salary && salary !== 'all') {
-      hhUrl += `&salary=${salary}&only_with_salary=true`;
+    .balatro-btn {
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+      box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+    .balatro-btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 1rem;
+      background: linear-gradient(125deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 60%);
+      pointer-events: none;
+    }
+    .balatro-btn:active {
+      transform: scale(0.97) translateZ(-5px) !important;
+      box-shadow: 0 4px 10px -2px rgba(0, 0, 0, 0.2);
     }
 
-    // Фильтр по удалёнке
-    if (schedule === 'remote') {
-      hhUrl += `&schedule=remote`;
+    /* Subtle 3D Effect for Inputs/Filters */
+    .filter-3d {
+      perspective: 500px;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.04);
+    }
+    .filter-3d:focus-within, .filter-3d:hover {
+      transform: scale(1.01) translateZ(3px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+  </style>
+</head>
+<body class="text-gray-900 pb-10">
+
+  <!-- Header -->
+  <div class="sticky top-0 z-50 glass-card px-5 py-4 mb-6 shadow-sm border-b border-gray-200/50">
+    <div class="max-w-md mx-auto flex justify-between items-center">
+      <h1 class="text-xl font-bold tracking-tight text-gray-900">JobGo</h1>
+      <span class="text-xs font-semibold px-2.5 py-1 bg-gray-200/60 text-gray-600 rounded-full">v2.5</span>
+    </div>
+  </div>
+
+  <div class="max-w-md mx-auto px-4 space-y-5">
+
+    <!-- Search Form & Filters -->
+    <div class="bg-white rounded-3xl p-4 shadow-sm border border-gray-100 space-y-3 relative">
+      
+      <!-- Input Profession with Autocomplete -->
+      <div class="relative">
+        <input 
+          type="text" 
+          id="searchInput" 
+          placeholder="Например, Видеомонтажёр" 
+          autocomplete="off"
+          class="w-full bg-gray-100/80 text-gray-900 text-sm rounded-2xl px-4 py-3.5 pl-10 focus:outline-none focus:ring-2 focus:ring-black/10 transition-all placeholder-gray-400 font-medium"
+        />
+        <svg class="w-5 h-5 absolute left-3.5 top-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
+
+        <!-- Profession Dropdown -->
+        <div id="suggestionsBox" class="hidden absolute left-0 right-0 top-full mt-2 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50 divide-y divide-gray-50">
+        </div>
+      </div>
+
+      <!-- Filters Grid -->
+      <div class="grid grid-cols-2 gap-2 pt-1">
+        
+        <!-- City Select + Custom Option Dropdown -->
+        <div class="relative">
+          <div 
+            onclick="toggleCityDropdown()"
+            class="filter-3d bg-gray-100/90 rounded-xl px-3 py-2.5 flex items-center justify-between cursor-pointer">
+            <span id="cityLabel" class="text-xs font-semibold text-gray-700 truncate">🌆 Любой город</span>
+            <span class="text-[10px] text-gray-400">▼</span>
+          </div>
+
+          <div id="cityDropdown" class="hidden absolute left-0 right-0 top-full mt-2 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-gray-100 p-2 z-50 space-y-1">
+            <div onclick="selectCity('')" class="px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded-xl cursor-pointer">🌆 Любой город</div>
+            <div onclick="selectCity('Москва')" class="px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded-xl cursor-pointer">Москва</div>
+            <div onclick="selectCity('Санкт-Петербург')" class="px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded-xl cursor-pointer">Санкт-Петербург</div>
+            <div onclick="selectCity('Казань')" class="px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded-xl cursor-pointer">Казань</div>
+            <div onclick="selectCity('Екатеринбург')" class="px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded-xl cursor-pointer">Екатеринбург</div>
+            <div class="pt-1 border-t border-gray-100">
+              <input 
+                type="text" 
+                id="customCityInput" 
+                placeholder="✍️ Свой вариант..." 
+                oninput="onCustomCityInput(this.value)"
+                class="w-full bg-gray-100 text-xs font-medium px-3 py-2 rounded-xl focus:outline-none"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Salary Select + Custom Option Dropdown -->
+        <div class="relative">
+          <div 
+            onclick="toggleSalaryDropdown()"
+            class="filter-3d bg-gray-100/90 rounded-xl px-3 py-2.5 flex items-center justify-between cursor-pointer">
+            <span id="salaryLabel" class="text-xs font-semibold text-gray-700 truncate">💰 Любая зарплата</span>
+            <span class="text-[10px] text-gray-400">▼</span>
+          </div>
+
+          <div id="salaryDropdown" class="hidden absolute right-0 left-0 top-full mt-2 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-gray-100 p-2 z-50 space-y-1">
+            <div onclick="selectSalary('', '💰 Любая зарплата')" class="px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded-xl cursor-pointer">💰 Любая</div>
+            <div onclick="selectSalary('50000', 'От 50 000 ₽')" class="px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded-xl cursor-pointer">От 50 000 ₽</div>
+            <div onclick="selectSalary('100000', 'От 100 000 ₽')" class="px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded-xl cursor-pointer">От 100 000 ₽</div>
+            <div onclick="selectSalary('150000', 'От 150 000 ₽')" class="px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded-xl cursor-pointer">От 150 000 ₽</div>
+            <div class="pt-1 border-t border-gray-100">
+              <input 
+                type="number" 
+                id="customSalaryInput" 
+                placeholder="✍️ Указать сумму ₽" 
+                oninput="onCustomSalaryInput(this.value)"
+                class="w-full bg-gray-100 text-xs font-medium px-3 py-2 rounded-xl focus:outline-none"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Format Filter (с пунктом Любой) -->
+        <select id="typeFilter" onchange="applyFilters()" class="filter-3d bg-gray-100/90 text-xs font-semibold text-gray-700 rounded-xl px-3 py-2.5 border-0 focus:ring-0 cursor-pointer appearance-none">
+          <option value="all">💻 Любой формат</option>
+          <option value="remote">🏠 Удалённо</option>
+          <option value="office">🏢 В офисе / На месте</option>
+        </select>
+
+        <!-- Source Filter -->
+        <select id="sourceFilter" onchange="applyFilters()" class="filter-3d bg-gray-100/90 text-xs font-semibold text-gray-700 rounded-xl px-3 py-2.5 border-0 focus:ring-0 cursor-pointer appearance-none">
+          <option value="all">🌐 Все площадки</option>
+          <option value="HeadHunter">🔴 HeadHunter</option>
+          <option value="Хабр Карьера">🟦 Хабр Карьера</option>
+          <option value="Работа в России">🇷🇺 Работа в России</option>
+        </select>
+
+      </div>
+
+      <!-- 3D Balatro Button -->
+      <div class="balatro-container pt-2">
+        <button 
+          id="balatroBtn"
+          onclick="searchJobs()" 
+          class="balatro-btn w-full bg-gradient-to-r from-gray-900 via-black to-gray-800 text-white font-bold text-sm py-4 rounded-2xl border border-white/20 cursor-pointer select-none">
+          <span class="inline-block transform translate-z-2">Найти вакансии ✨</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- AI Analysis Block -->
+    <div id="aiBlock" class="hidden bg-gradient-to-br from-indigo-50/80 to-purple-50/80 p-4 rounded-3xl border border-indigo-100/50 shadow-sm">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-base">✨</span>
+        <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-900">Анализ AI-ассистента</h3>
+      </div>
+      <p id="aiContent" class="text-xs leading-relaxed text-indigo-950 font-medium"></p>
+    </div>
+
+    <!-- Vacancies List -->
+    <div id="vacanciesList" class="space-y-3"></div>
+
+  </div>
+
+  <script>
+    const tg = window.Telegram?.WebApp;
+    if (tg) tg.expand();
+
+    const professionDatabase = [
+      "Видеомонтажёр", "Видеооператор", "Видеомейкер", "Motion Designer", 
+      "2D Аниматор", "3D Генералист", "Python-разработчик", "Frontend-разработчик", 
+      "Backend-разработчик", "SMM-специалист", "Контент-мейкер", "Графический дизайнер", 
+      "UI/UX Дизайнер", "Product Manager", "Project Manager", "Копирайтер", "Режиссёр монтажа"
+    ];
+
+    const searchInput = document.getElementById("searchInput");
+    const suggestionsBox = document.getElementById("suggestionsBox");
+
+    let selectedCity = "";
+    let selectedSalary = "";
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const randomProf = professionDatabase[Math.floor(Math.random() * professionDatabase.length)];
+      searchInput.placeholder = `Например, ${randomProf}`;
+    });
+
+    // Autocomplete Logic
+    searchInput.addEventListener("input", () => {
+      const query = searchInput.value.trim().toLowerCase();
+
+      if (!query) {
+        suggestionsBox.classList.add("hidden");
+        return;
+      }
+
+      const matches = professionDatabase.filter(item => 
+        item.toLowerCase().includes(query)
+      );
+
+      if (matches.length === 0) {
+        suggestionsBox.classList.add("hidden");
+        return;
+      }
+
+      suggestionsBox.innerHTML = matches.map(item => `
+        <div 
+          onclick="selectSuggestion('${item}')"
+          class="px-4 py-3 text-xs font-semibold text-gray-700 hover:bg-gray-100/80 active:bg-gray-200/80 cursor-pointer flex items-center justify-between transition-colors">
+          <span>${item}</span>
+          <span class="text-[10px] text-gray-400 font-normal">Выбрать ↵</span>
+        </div>
+      `).join('');
+
+      suggestionsBox.classList.remove("hidden");
+    });
+
+    function selectSuggestion(value) {
+      searchInput.value = value;
+      suggestionsBox.classList.add("hidden");
+      searchJobs();
     }
 
-    // Делаем запрос к API HH
-    const hhRes = await fetch(hhUrl, {
-      headers: {
-        // HH требует User-Agent для своих запросов
-        'User-Agent': 'JobGoApp/1.0 (contact@example.com)'
+    // City Dropdown Handlers
+    function toggleCityDropdown() {
+      document.getElementById('salaryDropdown').classList.add('hidden');
+      document.getElementById('cityDropdown').classList.toggle('hidden');
+    }
+
+    function selectCity(city) {
+      selectedCity = city;
+      document.getElementById('cityLabel').innerText = city ? `🌆 ${city}` : '🌆 Любой город';
+      document.getElementById('cityDropdown').classList.add('hidden');
+      document.getElementById('customCityInput').value = '';
+      applyFilters();
+    }
+
+    function onCustomCityInput(val) {
+      selectedCity = val.trim();
+      document.getElementById('cityLabel').innerText = val.trim() ? `🌆 ${val.trim()}` : '🌆 Любой город';
+      applyFilters();
+    }
+
+    // Salary Dropdown Handlers
+    function toggleSalaryDropdown() {
+      document.getElementById('cityDropdown').classList.add('hidden');
+      document.getElementById('salaryDropdown').classList.toggle('hidden');
+    }
+
+    function selectSalary(value, label) {
+      selectedSalary = value;
+      document.getElementById('salaryLabel').innerText = label;
+      document.getElementById('salaryDropdown').classList.add('hidden');
+      document.getElementById('customSalaryInput').value = '';
+      applyFilters();
+    }
+
+    function onCustomSalaryInput(val) {
+      selectedSalary = val.trim();
+      document.getElementById('salaryLabel').innerText = val.trim() ? `От ${val.trim()} ₽` : '💰 Любая зарплата';
+      applyFilters();
+    }
+
+    // Hide dropdowns when clicking outside
+    document.addEventListener("click", (e) => {
+      if (!searchInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
+        suggestionsBox.classList.add("hidden");
+      }
+      if (!e.target.closest('#cityDropdown') && !e.target.closest('[onclick="toggleCityDropdown()"]')) {
+        document.getElementById('cityDropdown').classList.add('hidden');
+      }
+      if (!e.target.closest('#salaryDropdown') && !e.target.closest('[onclick="toggleSalaryDropdown()"]')) {
+        document.getElementById('salaryDropdown').classList.add('hidden');
       }
     });
 
-    if (!hhRes.ok) {
-      throw new Error(`HH API error: ${hhRes.status}`);
-    }
-
-    const data = await hhRes.json();
-
-    // Преобразуем сложный ответ HH в простой формат для фронтенда
-    const vacancies = (data.items || []).map(item => {
-      let salaryText = 'По договорённости';
-      if (item.salary) {
-        const from = item.salary.from ? `от ${item.salary.from}` : '';
-        const to = item.salary.to ? `до ${item.salary.to}` : '';
-        const curr = item.salary.currency === 'RUR' ? '₽' : item.salary.currency;
-        salaryText = `${from} ${to} ${curr}`.trim();
+    // Enter Key Search
+    searchInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        suggestionsBox.classList.add("hidden");
+        searchJobs();
       }
-
-      return {
-        id: item.id,
-        title: item.name,
-        company: item.employer ? item.employer.name : 'Компания не указана',
-        salary: salaryText,
-        // Очищаем сниппет от HTML-тегов
-        snippet: (item.snippet?.requirement || item.snippet?.responsibility || '')
-          .replace(/<highlighttext>/g, '')
-          .replace(/<\/highlighttext>/g, ''),
-        url: item.alternate_url,
-        source: 'HeadHunter'
-      };
     });
 
-    // Отправляем готовый список на фронтенд
-    res.status(200).json({ vacancies });
+    let rawVacancies = [];
 
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Внутренняя ошибка сервера Vercel' });
-  }
-}
+    // Balatro 3D Tilt
+    const btn = document.getElementById('balatroBtn');
+    function handleMove(e) {
+      const rect = btn.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const x = clientX - rect.left;
+      const y = clientY - rect.top;
+      const rotateX = ((y - rect.height / 2) / (rect.height / 2)) * -6; 
+      const rotateY = ((x - rect.width / 2) / (rect.width / 2)) * 5; 
+      btn.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.01, 1.01, 1.01)`;
+    }
+    function handleReset() {
+      btn.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
+    }
+    btn.addEventListener('mousemove', handleMove);
+    btn.addEventListener('mouseleave', handleReset);
+    btn.addEventListener('touchmove', handleMove);
+    btn.addEventListener('touchend', handleReset);
+
+    // API Search & Filter
+    async function searchJobs() {
+      let query = searchInput.value.trim();
+      if (!query) query = searchInput.placeholder.replace("Например, ", "");
+
+      const vacanciesList = document.getElementById('vacanciesList');
+      const aiBlock = document.getElementById('aiBlock');
+      const aiContent = document.getElementById('aiContent');
+
+      vacanciesList.innerHTML = `
+        <div class="text-center py-12">
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-2 border-gray-900 border-t-transparent mb-3"></div>
+          <p class="text-xs font-medium text-gray-400">Ищем лучшие предложения...</p>
+        </div>
+      `;
+      aiBlock.classList.add('hidden');
+
+      try {
+        const response = await fetch(`/api/vacancies?query=${encodeURIComponent(query)}`);
+        const data = await response.json();
+
+        if (!data.vacancies || data.vacancies.length === 0) {
+          vacanciesList.innerHTML = `
+            <div class="text-center py-10 bg-white rounded-3xl p-6 border border-gray-100">
+              <p class="text-sm font-semibold text-gray-800">Ничего не найдено</p>
+              <p class="text-xs text-gray-400 mt-1">Попробуйте изменить поисковый запрос</p>
+            </div>
+          `;
+          return;
+        }
+
+        rawVacancies = data.vacancies;
+
+        if (data.aiAnalysis) {
+          aiContent.innerText = data.aiAnalysis;
+          aiBlock.classList.remove('hidden');
+        }
+
+        applyFilters();
+
+      } catch (err) {
+        vacanciesList.innerHTML = `
+          <div class="text-center py-8 bg-red-50 text-red-600 rounded-3xl text-xs font-medium p-4">
+            Ошибка при загрузке данных. Попробуйте еще раз.
+          </div>
+        `;
+      }
+    }
+
+    function applyFilters() {
+      const cityQuery = selectedCity.toLowerCase();
+      const minSalary = parseInt(selectedSalary, 10);
+      const type = document.getElementById('typeFilter').value;
+      const source = document.getElementById('sourceFilter').value;
+
+      let filtered = [...rawVacancies];
+
+      // Filter City
+      if (cityQuery) {
+        filtered = filtered.filter(v => 
+          (v.snippet && v.snippet.toLowerCase().includes(cityQuery)) ||
+          (v.title && v.title.toLowerCase().includes(cityQuery))
+        );
+      }
+
+      // Filter Salary
+      if (!isNaN(minSalary) && minSalary > 0) {
+        filtered = filtered.filter(v => {
+          if (!v.salary) return false;
+          const nums = v.salary.replace(/\s/g, '').match(/\d+/g);
+          return nums && nums.some(n => parseInt(n, 10) >= minSalary);
+        });
+      }
+
+      // Filter Format
+      if (type === 'remote') {
+        filtered = filtered.filter(v => 
+          (v.title + v.snippet).toLowerCase().includes('удален') || 
+          (v.title + v.snippet).toLowerCase().includes('remote')
+        );
+      } else if (type === 'office') {
+        filtered = filtered.filter(v => 
+          !(v.title + v.snippet).toLowerCase().includes('удален')
+        );
+      }
+
+      // Filter Source
+      if (source !== 'all') {
+        filtered = filtered.filter(v => v.source === source);
+      }
+
+      renderVacancies(filtered);
+    }
+
+    function renderVacancies(vacancies) {
+      const vacanciesList = document.getElementById('vacanciesList');
+
+      if (vacancies.length === 0) {
+        vacanciesList.innerHTML = `
+          <div class="text-center py-8 bg-white rounded-3xl p-4 text-xs text-gray-400 border border-gray-100">
+            Нет вакансий, соответствующих выбранным фильтрам.
+          </div>
+        `;
+        return;
+      }
+
+      vacanciesList.innerHTML = vacancies.map(v => {
+        let sourceBadge = 'bg-gray-100 text-gray-600 border border-gray-200';
+        if (v.source === 'HeadHunter') sourceBadge = 'bg-red-50 text-red-600 border border-red-100';
+        if (v.source === 'Хабр Карьера') sourceBadge = 'bg-blue-50 text-blue-600 border border-blue-100';
+        if (v.source === 'Работа в России') sourceBadge = 'bg-emerald-50 text-emerald-700 border border-emerald-100';
+
+        return `
+          <div class="bg-white p-5 rounded-3xl shadow-sm border border-gray-100/80 hover:shadow-md transition-all duration-200 flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-start gap-2 mb-2">
+                <h3 class="font-bold text-base text-gray-900 leading-snug">${v.title}</h3>
+                <span class="text-[10px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap ${sourceBadge}">
+                  ${v.source || 'Вакансии'}
+                </span>
+              </div>
+              
+              <div class="flex items-center gap-2 mb-3">
+                <span class="text-xs font-semibold text-gray-500">${v.company}</span>
+              </div>
+
+              <div class="inline-block bg-emerald-50 text-emerald-700 text-xs font-bold px-3 py-1.5 rounded-xl mb-3">
+                ${v.salary}
+              </div>
+
+              <p class="text-xs text-gray-500 leading-relaxed line-clamp-2 mb-4 font-normal">
+                ${v.snippet}
+              </p>
+            </div>
+
+            <a 
+              href="${v.url}" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              class="block w-full text-center bg-gray-100 hover:bg-gray-200 text-gray-900 font-semibold text-xs py-3 rounded-2xl transition-all active:scale-[0.98]">
+              Смотреть на ${v.source || 'сайте'} ↗
+            </a>
+          </div>
+        `;
+      }).join('');
+    }
+  </script>
+</body>
+</html>

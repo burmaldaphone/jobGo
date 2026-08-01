@@ -126,6 +126,77 @@
     color: white;
     box-shadow: 0 4px 14px rgba(99,102,241,0.35);
   }
+
+  /* ---------- Expressive profession input ---------- */
+  #querySearchWrap {
+    transition: box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
+    border: 1.5px solid transparent;
+  }
+  #querySearchWrap:focus-within {
+    border-color: rgba(99, 102, 241, 0.55);
+    box-shadow: 0 0 0 5px rgba(99, 102, 241, 0.12), 0 14px 30px rgba(99, 102, 241, 0.18);
+    transform: translateY(-2px);
+  }
+  #queryIcon {
+    transition: transform 0.25s ease, color 0.25s ease;
+    color: #94a3b8;
+  }
+  #querySearchWrap:focus-within #queryIcon {
+    color: var(--accent-from);
+    transform: scale(1.12) rotate(-6deg);
+  }
+  #queryInput {
+    font-size: 1.05rem;
+  }
+  #queryInput::placeholder {
+    color: #b6bccb;
+    font-weight: 500;
+  }
+  #queryClearBtn {
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+  #queryClearBtn:active {
+    transform: scale(0.85);
+  }
+
+  /* ---------- Custom dropdown (city / salary) ---------- */
+  .custom-select-btn {
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    cursor: pointer;
+  }
+  .custom-select-btn .chev {
+    transition: transform 0.2s ease;
+  }
+  .custom-select-btn[aria-expanded="true"] .chev {
+    transform: rotate(180deg);
+  }
+  .custom-dropdown {
+    position: fixed;
+    z-index: 9999;
+    transform-origin: top center;
+    animation: dropdownIn 0.16s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    max-height: 260px;
+    overflow-y: auto;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+  }
+  @keyframes dropdownIn {
+    from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .option-item {
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .option-item:hover, .option-item.selected {
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--accent-from);
+  }
+  .option-item.selected {
+    font-weight: 700;
+  }
 </style>
 </head>
 <body class="pb-10">
@@ -145,52 +216,69 @@
   <section class="glass rounded-3xl p-4 space-y-3 relative z-20">
 
     <!-- Profession input with autocomplete -->
-    <div class="relative filter-3d rounded-2xl">
-      <label class="block text-xs font-semibold text-slate-500 px-4 pt-3">Профессия</label>
-      <input
-        id="queryInput"
-        type="text"
-        placeholder="Например, Frontend-разработчик"
-        autocomplete="off"
-        class="w-full bg-transparent px-4 pb-3 pt-1 text-slate-800 font-medium placeholder-slate-400 outline-none"
-      />
+    <div class="relative rounded-2xl">
+      <div id="querySearchWrap" class="flex items-center gap-3 bg-white/70 rounded-2xl px-4 py-3">
+        <svg id="queryIcon" width="22" height="22" viewBox="0 0 24 24" fill="none" class="shrink-0">
+          <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2.2"/>
+          <path d="M20 20L16.5 16.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+        </svg>
+        <div class="flex-1 min-w-0">
+          <label class="block text-[11px] font-bold uppercase tracking-wide text-indigo-400/80">Кем хотите работать?</label>
+          <input
+            id="queryInput"
+            type="text"
+            placeholder="Frontend-разработчик, дизайнер, курьер…"
+            autocomplete="off"
+            class="w-full bg-transparent text-slate-800 font-bold placeholder-slate-400 outline-none"
+          />
+        </div>
+        <button id="queryClearBtn" type="button" aria-label="Очистить" class="hidden shrink-0 w-6 h-6 rounded-full bg-slate-200/70 text-slate-500 text-sm font-bold flex items-center justify-center">✕</button>
+      </div>
       <div id="autocompleteList" class="hidden absolute left-0 right-0 top-full mt-2 glass-card rounded-2xl p-2 z-30"></div>
     </div>
 
-    <!-- City select -->
+    <!-- City custom dropdown -->
     <div class="relative filter-3d rounded-2xl glass-card">
       <label class="block text-xs font-semibold text-slate-500 px-4 pt-3">Город</label>
-      <select id="citySelect" class="w-full bg-transparent px-4 pb-3 pt-1 text-slate-800 font-medium outline-none">
-        <option value="Москва">Москва</option>
-        <option value="Санкт-Петербург">Санкт-Петербург</option>
-        <option value="Казань">Казань</option>
-        <option value="Екатеринбург">Екатеринбург</option>
-        <option value="__custom">Другой город...</option>
-      </select>
+      <button type="button" id="cityBtn" aria-expanded="false" class="custom-select-btn px-4 pb-3 pt-1 flex items-center justify-between">
+        <span id="cityBtnLabel" class="text-slate-800 font-medium">Москва</span>
+        <svg class="chev shrink-0 text-slate-400" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
       <input
         id="customCityInput"
         type="text"
         placeholder="Введите город"
         class="hidden w-full bg-transparent px-4 pb-3 text-slate-800 font-medium placeholder-slate-400 outline-none border-t border-white/50"
       />
+      <div id="cityDropdown" class="hidden custom-dropdown glass-card rounded-2xl p-2">
+        <div class="option-item selected px-3 py-2.5 rounded-xl cursor-pointer text-sm text-slate-700" data-value="Москва">Москва</div>
+        <div class="option-item px-3 py-2.5 rounded-xl cursor-pointer text-sm text-slate-700" data-value="Санкт-Петербург">Санкт-Петербург</div>
+        <div class="option-item px-3 py-2.5 rounded-xl cursor-pointer text-sm text-slate-700" data-value="Казань">Казань</div>
+        <div class="option-item px-3 py-2.5 rounded-xl cursor-pointer text-sm text-slate-700" data-value="Екатеринбург">Екатеринбург</div>
+        <div class="option-item px-3 py-2.5 rounded-xl cursor-pointer text-sm text-slate-700" data-value="__custom">Другой город...</div>
+      </div>
     </div>
 
-    <!-- Salary select -->
+    <!-- Salary custom dropdown -->
     <div class="relative filter-3d rounded-2xl glass-card">
       <label class="block text-xs font-semibold text-slate-500 px-4 pt-3">Зарплата от</label>
-      <select id="salarySelect" class="w-full bg-transparent px-4 pb-3 pt-1 text-slate-800 font-medium outline-none">
-        <option value="">Не важно</option>
-        <option value="50000">от 50 000 ₽</option>
-        <option value="100000">от 100 000 ₽</option>
-        <option value="150000">от 150 000 ₽</option>
-        <option value="__custom">Своя сумма...</option>
-      </select>
+      <button type="button" id="salaryBtn" aria-expanded="false" class="custom-select-btn px-4 pb-3 pt-1 flex items-center justify-between">
+        <span id="salaryBtnLabel" class="text-slate-800 font-medium">Не важно</span>
+        <svg class="chev shrink-0 text-slate-400" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
       <input
         id="customSalaryInput"
         type="number"
         placeholder="Введите сумму"
         class="hidden w-full bg-transparent px-4 pb-3 text-slate-800 font-medium placeholder-slate-400 outline-none border-t border-white/50"
       />
+      <div id="salaryDropdown" class="hidden custom-dropdown glass-card rounded-2xl p-2">
+        <div class="option-item selected px-3 py-2.5 rounded-xl cursor-pointer text-sm text-slate-700" data-value="">Не важно</div>
+        <div class="option-item px-3 py-2.5 rounded-xl cursor-pointer text-sm text-slate-700" data-value="50000">от 50 000 ₽</div>
+        <div class="option-item px-3 py-2.5 rounded-xl cursor-pointer text-sm text-slate-700" data-value="100000">от 100 000 ₽</div>
+        <div class="option-item px-3 py-2.5 rounded-xl cursor-pointer text-sm text-slate-700" data-value="150000">от 150 000 ₽</div>
+        <div class="option-item px-3 py-2.5 rounded-xl cursor-pointer text-sm text-slate-700" data-value="__custom">Своя сумма...</div>
+      </div>
     </div>
 
     <!-- Schedule segmented control -->
@@ -261,13 +349,24 @@
 
   // ---------------- Elements ----------------
   const queryInput = document.getElementById("queryInput");
+  const queryClearBtn = document.getElementById("queryClearBtn");
   const autocompleteList = document.getElementById("autocompleteList");
-  const citySelect = document.getElementById("citySelect");
+
+  const cityBtn = document.getElementById("cityBtn");
+  const cityBtnLabel = document.getElementById("cityBtnLabel");
+  const cityDropdown = document.getElementById("cityDropdown");
   const customCityInput = document.getElementById("customCityInput");
-  const salarySelect = document.getElementById("salarySelect");
+
+  const salaryBtn = document.getElementById("salaryBtn");
+  const salaryBtnLabel = document.getElementById("salaryBtnLabel");
+  const salaryDropdown = document.getElementById("salaryDropdown");
   const customSalaryInput = document.getElementById("customSalaryInput");
+
   const scheduleGroup = document.getElementById("scheduleGroup");
   const searchBtn = document.getElementById("searchBtn");
+
+  let selectedCity = "Москва";
+  let selectedSalary = "";
 
   const loadingState = document.getElementById("loadingState");
   const errorState = document.getElementById("errorState");
@@ -293,6 +392,10 @@
     "Курьер", "Водитель", "Официант", "Повар", "Кассир", "Складской работник"
   ];
 
+  // Плейсхолдер с примером профессии — меняется при каждой перезагрузке страницы
+  const randomExample = PROFESSIONS[Math.floor(Math.random() * PROFESSIONS.length)];
+  queryInput.setAttribute("placeholder", `Например, ${randomExample}`);
+
   function renderAutocomplete(matches) {
     if (!matches.length) {
       autocompleteList.classList.add("hidden");
@@ -311,6 +414,7 @@
 
   queryInput.addEventListener("input", () => {
     const val = queryInput.value.trim().toLowerCase();
+    queryClearBtn.classList.toggle("hidden", !queryInput.value);
     if (!val) {
       renderAutocomplete([]);
       return;
@@ -319,10 +423,18 @@
     renderAutocomplete(matches);
   });
 
+  queryClearBtn.addEventListener("click", () => {
+    queryInput.value = "";
+    queryClearBtn.classList.add("hidden");
+    renderAutocomplete([]);
+    queryInput.focus();
+  });
+
   autocompleteList.addEventListener("click", (e) => {
     const item = e.target.closest(".autocomplete-item");
     if (!item) return;
     queryInput.value = item.textContent;
+    queryClearBtn.classList.remove("hidden");
     renderAutocomplete([]);
   });
 
@@ -332,26 +444,107 @@
     }
   });
 
-  // ---------------- City custom input ----------------
-  citySelect.addEventListener("change", () => {
-    if (citySelect.value === "__custom") {
-      customCityInput.classList.remove("hidden");
-      customCityInput.focus();
-    } else {
-      customCityInput.classList.add("hidden");
-      customCityInput.value = "";
+  // ---------------- Generic custom dropdown helper ----------------
+  function setupDropdown({ btn, btnLabel, dropdown, customInput, onSelect }) {
+    // Переносим панель прямо в <body> — так на неё не влияют transform
+    // и transform-style:preserve-3d родительских блоков (3D-tilt), которые
+    // в вебвью Telegram могли ломать позиционирование и клики.
+    document.body.appendChild(dropdown);
+
+    function position() {
+      const tiltParent = btn.closest(".filter-3d");
+      if (tiltParent) tiltParent.style.transform = "";
+
+      const rect = btn.getBoundingClientRect();
+      dropdown.style.left = `${rect.left}px`;
+      dropdown.style.width = `${rect.width}px`;
+      dropdown.style.top = `${rect.bottom + 8}px`;
     }
+
+    function open() {
+      closeAllDropdowns();
+      position();
+      dropdown.classList.remove("hidden");
+      dropdown.style.display = "block";
+      btn.setAttribute("aria-expanded", "true");
+    }
+    function close() {
+      dropdown.classList.add("hidden");
+      dropdown.style.display = "none";
+      btn.setAttribute("aria-expanded", "false");
+    }
+
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const isOpen = dropdown.style.display === "block";
+      isOpen ? close() : open();
+    });
+
+    dropdown.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const item = e.target.closest(".option-item");
+      if (!item) return;
+
+      [...dropdown.querySelectorAll(".option-item")].forEach((o) => o.classList.remove("selected"));
+      item.classList.add("selected");
+
+      const value = item.dataset.value;
+
+      if (value === "__custom") {
+        btnLabel.textContent = "Свой вариант";
+        customInput.classList.remove("hidden");
+        customInput.value = "";
+        customInput.focus();
+        onSelect("__custom");
+      } else {
+        btnLabel.textContent = item.textContent;
+        customInput.classList.add("hidden");
+        customInput.value = "";
+        onSelect(value);
+      }
+
+      close();
+      if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+    });
+
+    return { close };
+  }
+
+  function closeAllDropdowns() {
+    [cityDropdown, salaryDropdown].forEach((d) => {
+      d.classList.add("hidden");
+      d.style.display = "none";
+    });
+    [cityBtn, salaryBtn].forEach((b) => b.setAttribute("aria-expanded", "false"));
+  }
+
+  document.addEventListener("click", closeAllDropdowns);
+  window.addEventListener("scroll", closeAllDropdowns, true);
+  window.addEventListener("resize", closeAllDropdowns);
+
+  setupDropdown({
+    btn: cityBtn,
+    btnLabel: cityBtnLabel,
+    dropdown: cityDropdown,
+    customInput: customCityInput,
+    onSelect: (value) => { selectedCity = value === "__custom" ? "" : value; },
   });
 
-  // ---------------- Salary custom input ----------------
-  salarySelect.addEventListener("change", () => {
-    if (salarySelect.value === "__custom") {
-      customSalaryInput.classList.remove("hidden");
-      customSalaryInput.focus();
-    } else {
-      customSalaryInput.classList.add("hidden");
-      customSalaryInput.value = "";
-    }
+  customCityInput.addEventListener("input", () => {
+    selectedCity = customCityInput.value.trim();
+  });
+
+  setupDropdown({
+    btn: salaryBtn,
+    btnLabel: salaryBtnLabel,
+    dropdown: salaryDropdown,
+    customInput: customSalaryInput,
+    onSelect: (value) => { selectedSalary = value === "__custom" ? "" : value; },
+  });
+
+  customSalaryInput.addEventListener("input", () => {
+    selectedSalary = customSalaryInput.value.trim();
   });
 
   // ---------------- Schedule segmented control ----------------
@@ -400,6 +593,7 @@
   // ---------------- Filter-3d tilt (subtle) for inputs ----------------
   document.querySelectorAll(".filter-3d").forEach((el) => {
     el.addEventListener("mousemove", (e) => {
+      if (el.querySelector('[aria-expanded="true"]')) return;
       const rect = el.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
@@ -488,10 +682,8 @@
     renderAutocomplete([]);
 
     const query = queryInput.value.trim();
-    const city =
-      citySelect.value === "__custom" ? customCityInput.value.trim() : citySelect.value;
-    const salary =
-      salarySelect.value === "__custom" ? customSalaryInput.value.trim() : salarySelect.value;
+    const city = selectedCity.trim();
+    const salary = selectedSalary.trim();
     const schedule = selectedSchedule === "remote" ? "remote" : "";
 
     if (!query && !city) {

@@ -1,101 +1,217 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>JobGo — Поиск Вакансий</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>JobGo — Поиск вакансий</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+      background-color: #f5f5f7;
+      -webkit-font-smoothing: antialiased;
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+  </style>
 </head>
-<body class="bg-slate-900 text-white min-h-screen p-4">
-  <div class="max-w-md mx-auto">
-    <h1 class="text-2xl font-bold text-center mb-6 text-blue-400">🔍 JobGo</h1>
+<body class="text-gray-900 pb-10">
 
-    <!-- Форма поиска -->
-    <div class="bg-slate-800 p-4 rounded-xl shadow-lg mb-6 border border-slate-700">
-      <label class="block text-sm font-medium mb-2 text-slate-300">Кого ищем?</label>
-      <input 
-        type="text" 
-        id="jobQuery" 
-        placeholder="Например: Видеомонтажёр" 
-        class="w-full p-3 rounded-lg bg-slate-900 border border-slate-700 text-white mb-4 focus:outline-none focus:border-blue-500"
-      />
-      
-      <button 
-        onclick="searchJobs()" 
-        id="searchBtn"
-        class="w-full bg-blue-600 hover:bg-blue-500 font-semibold py-3 rounded-lg transition duration-200">
-        Найти лучшие вакансии
-      </button>
+  <!-- Header -->
+  <div class="sticky top-0 z-50 glass-card px-5 py-4 mb-6 shadow-sm border-b border-gray-200/50">
+    <div class="max-w-md mx-auto flex justify-between items-center">
+      <h1 class="text-xl font-bold tracking-tight text-gray-900">JobGo</h1>
+      <span class="text-xs font-semibold px-2.5 py-1 bg-gray-200/60 text-gray-600 rounded-full">v2.0</span>
+    </div>
+  </div>
+
+  <div class="max-w-md mx-auto px-4 space-y-5">
+
+    <!-- Search Box -->
+    <div class="bg-white rounded-3xl p-4 shadow-sm border border-gray-100">
+      <div class="relative mb-3">
+        <input 
+          type="text" 
+          id="searchInput" 
+          placeholder="Должность или навык (напр. Видеомонтажёр)" 
+          class="w-full bg-gray-100/80 text-gray-900 text-sm rounded-2xl px-4 py-3.5 pl-10 focus:outline-none focus:ring-2 focus:ring-black/10 transition-all placeholder-gray-400 font-medium"
+        />
+        <svg class="w-5 h-5 absolute left-3.5 top-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
+      </div>
+
+      <!-- Фильтры -->
+      <div class="space-y-3 pt-2">
+        <div class="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+          <!-- Фильтр по площадкам -->
+          <select id="sourceFilter" onchange="applyFilters()" class="bg-gray-100/80 text-xs font-semibold text-gray-700 rounded-xl px-3 py-2 border-0 focus:ring-0 cursor-pointer">
+            <option value="all">🌐 Все площадки</option>
+            <option value="HeadHunter">🔴 HeadHunter</option>
+            <option value="Хабр Карьера">🟦 Хабр Карьера</option>
+            <option value="Работа в России">🇷🇺 Работа в России</option>
+          </select>
+
+          <!-- Фильтр по З/П -->
+          <select id="salaryFilter" onchange="applyFilters()" class="bg-gray-100/80 text-xs font-semibold text-gray-700 rounded-xl px-3 py-2 border-0 focus:ring-0 cursor-pointer">
+            <option value="all">💰 Любая зарплата</option>
+            <option value="specified">С указанным окладом</option>
+          </select>
+        </div>
+
+        <button 
+          onclick="searchJobs()" 
+          class="w-full bg-black hover:bg-gray-800 text-white font-semibold text-sm py-3.5 rounded-2xl shadow-md active:scale-[0.98] transition-all duration-150">
+          Найти вакансии
+        </button>
+      </div>
     </div>
 
-    <!-- Индикатор загрузки -->
-    <div id="loader" class="hidden text-center py-8">
-      <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mb-2"></div>
-      <p class="text-slate-400 text-sm">Ищем вакансии и анализируем через ИИ...</p>
+    <!-- AI Анализ от DeepSeek -->
+    <div id="aiBlock" class="hidden bg-gradient-to-br from-indigo-50/80 to-purple-50/80 p-4 rounded-3xl border border-indigo-100/50 shadow-sm">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-base">✨</span>
+        <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-900">Анализ AI-ассистента</h3>
+      </div>
+      <p id="aiContent" class="text-xs leading-relaxed text-indigo-950 font-medium"></p>
     </div>
 
-    <!-- Ошибка -->
-    <div id="errorBox" class="hidden bg-red-900/50 border border-red-500 text-red-200 p-4 rounded-xl mb-4 text-center">
-      <p id="errorText"></p>
+    <!-- Результаты -->
+    <div id="vacanciesList" class="space-y-3">
+      <!-- Сюда подгружаются вакансии -->
     </div>
 
-    <!-- Список вакансий -->
-    <div id="results" class="space-y-4"></div>
   </div>
 
   <script>
-    // Инициализация Telegram WebApp
     const tg = window.Telegram?.WebApp;
     if (tg) tg.expand();
 
+    let rawVacancies = [];
+
     async function searchJobs() {
-      const query = document.getElementById('jobQuery').value.trim();
-      const loader = document.getElementById('loader');
-      const results = document.getElementById('results');
-      const errorBox = document.getElementById('errorBox');
+      const query = document.getElementById('searchInput').value.trim();
+      const vacanciesList = document.getElementById('vacanciesList');
+      const aiBlock = document.getElementById('aiBlock');
+      const aiContent = document.getElementById('aiContent');
 
-      if (!query) {
-        alert('Пожалуйста, введите профессию!');
-        return;
-      }
+      if (!query) return;
 
-      loader.classList.remove('hidden');
-      results.innerHTML = '';
-      errorBox.classList.add('hidden');
+      vacanciesList.innerHTML = `
+        <div class="text-center py-12">
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-2 border-gray-900 border-t-transparent mb-3"></div>
+          <p class="text-xs font-medium text-gray-400">Ищем лучшие предложения...</p>
+        </div>
+      `;
+      aiBlock.classList.add('hidden');
 
       try {
-        // Делаем запрос к нашей собственной Serverless-функции Vercel
         const response = await fetch(`/api/vacancies?query=${encodeURIComponent(query)}`);
         const data = await response.json();
 
-        if (!response.ok) {
-          throw new Error(data.error || 'Произошла ошибка при загрузке');
-        }
-
         if (!data.vacancies || data.vacancies.length === 0) {
-          results.innerHTML = '<p class="text-center text-slate-400">Вакансий не найдено</p>';
+          vacanciesList.innerHTML = `
+            <div class="text-center py-10 bg-white rounded-3xl p-6 border border-gray-100">
+              <p class="text-sm font-semibold text-gray-800">Ничего не найдено</p>
+              <p class="text-xs text-gray-400 mt-1">Попробуйте изменить поисковый запрос</p>
+            </div>
+          `;
           return;
         }
 
-        // Рендерим результаты
-        results.innerHTML = data.vacancies.map(job => `
-          <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 hover:border-blue-500 transition">
-            <h3 class="font-bold text-lg text-blue-300">${job.title}</h3>
-            <p class="text-sm text-slate-400 mb-1">${job.company}</p>
-            <p class="text-green-400 font-medium text-sm mb-3">${job.salary}</p>
-            <a href="${job.url}" target="_blank" class="inline-block w-full text-center bg-slate-700 hover:bg-slate-600 text-white text-sm py-2 rounded-lg font-medium transition">
-              Откликнуться на HH
-            </a>
-          </div>
-        `).join('');
+        rawVacancies = data.vacancies;
+
+        // Вывод AI анализа
+        if (data.aiAnalysis) {
+          aiContent.innerText = data.aiAnalysis;
+          aiBlock.classList.remove('hidden');
+        }
+
+        applyFilters();
 
       } catch (err) {
-        document.getElementById('errorText').innerText = err.message;
-        errorBox.classList.remove('hidden');
-      } finally {
-        loader.classList.add('hidden');
+        vacanciesList.innerHTML = `
+          <div class="text-center py-8 bg-red-50 text-red-600 rounded-3xl text-xs font-medium p-4">
+            Ошибка при загрузке данных. Попробуйте еще раз.
+          </div>
+        `;
       }
+    }
+
+    function applyFilters() {
+      const source = document.getElementById('sourceFilter').value;
+      const salary = document.getElementById('salaryFilter').value;
+      const vacanciesList = document.getElementById('vacanciesList');
+
+      let filtered = [...rawVacancies];
+
+      if (source !== 'all') {
+        filtered = filtered.filter(v => v.source === source);
+      }
+
+      if (salary === 'specified') {
+        filtered = filtered.filter(v => v.salary && !v.salary.includes('договоренности'));
+      }
+
+      renderVacancies(filtered);
+    }
+
+    function renderVacancies(vacancies) {
+      const vacanciesList = document.getElementById('vacanciesList');
+
+      if (vacancies.length === 0) {
+        vacanciesList.innerHTML = `
+          <div class="text-center py-8 bg-white rounded-3xl p-4 text-xs text-gray-400 border border-gray-100">
+            Нет вакансий, соответствующих выбранным фильтрам.
+          </div>
+        `;
+        return;
+      }
+
+      vacanciesList.innerHTML = vacancies.map(v => {
+        // Подсветка источника
+        let sourceBadge = 'bg-gray-100 text-gray-600';
+        if (v.source === 'HeadHunter') sourceBadge = 'bg-red-50 text-red-600 border border-red-100';
+        if (v.source === 'Хабр Карьера') sourceBadge = 'bg-blue-50 text-blue-600 border border-blue-100';
+
+        return `
+          <div class="bg-white p-5 rounded-3xl shadow-sm border border-gray-100/80 hover:shadow-md transition-all duration-200 flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-start gap-2 mb-2">
+                <h3 class="font-bold text-base text-gray-900 leading-snug">${v.title}</h3>
+                <span class="text-[10px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap ${sourceBadge}">
+                  ${v.source || 'HH.ru'}
+                </span>
+              </div>
+              
+              <div class="flex items-center gap-2 mb-3">
+                <span class="text-xs font-semibold text-gray-500">${v.company}</span>
+              </div>
+
+              <div class="inline-block bg-emerald-50 text-emerald-700 text-xs font-bold px-3 py-1.5 rounded-xl mb-3">
+                ${v.salary}
+              </div>
+
+              <p class="text-xs text-gray-500 leading-relaxed line-clamp-2 mb-4 font-normal">
+                ${v.snippet}
+              </p>
+            </div>
+
+            <a 
+              href="${v.url}" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              class="block w-full text-center bg-gray-100 hover:bg-gray-200 text-gray-900 font-semibold text-xs py-3 rounded-2xl transition-all active:scale-[0.98]">
+              Смотреть на ${v.source || 'hh.ru'} ↗
+            </a>
+          </div>
+        `;
+      }).join('');
     }
   </script>
 </body>

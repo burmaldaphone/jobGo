@@ -19,7 +19,7 @@
       border: 1px solid rgba(255, 255, 255, 0.3);
     }
 
-    /* 3D Balatro Card Button Effect */
+    /* 3D Balatro Main Button */
     .balatro-container {
       perspective: 1000px;
     }
@@ -41,27 +41,44 @@
       transform: scale(0.97) translateZ(-5px) !important;
       box-shadow: 0 4px 10px -2px rgba(0, 0, 0, 0.2);
     }
+
+    /* Subtle 3D Effect for Filter Tags */
+    .filter-3d {
+      perspective: 500px;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.04);
+    }
+    .filter-3d:hover {
+      transform: scale(1.02) translateZ(4px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .filter-3d:active {
+      transform: scale(0.97) translateZ(-2px);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
   </style>
 </head>
 <body class="text-gray-900 pb-10">
 
-  <!-- Шапка в стиле Apple -->
+  <!-- Header -->
   <div class="sticky top-0 z-50 glass-card px-5 py-4 mb-6 shadow-sm border-b border-gray-200/50">
     <div class="max-w-md mx-auto flex justify-between items-center">
       <h1 class="text-xl font-bold tracking-tight text-gray-900">JobGo</h1>
-      <span class="text-xs font-semibold px-2.5 py-1 bg-gray-200/60 text-gray-600 rounded-full">v2.0</span>
+      <span class="text-xs font-semibold px-2.5 py-1 bg-gray-200/60 text-gray-600 rounded-full">v2.1</span>
     </div>
   </div>
 
   <div class="max-w-md mx-auto px-4 space-y-5">
 
-    <!-- Форма поиска и фильтры -->
-    <div class="bg-white rounded-3xl p-4 shadow-sm border border-gray-100">
-      <div class="relative mb-3">
+    <!-- Search Form & Filters -->
+    <div class="bg-white rounded-3xl p-4 shadow-sm border border-gray-100 space-y-3">
+      
+      <!-- Input -->
+      <div class="relative">
         <input 
           type="text" 
           id="searchInput" 
-          placeholder="Должность или навык (напр. Видеомонтажёр)" 
+          placeholder="Например, Видеомонтажёр" 
           class="w-full bg-gray-100/80 text-gray-900 text-sm rounded-2xl px-4 py-3.5 pl-10 focus:outline-none focus:ring-2 focus:ring-black/10 transition-all placeholder-gray-400 font-medium"
         />
         <svg class="w-5 h-5 absolute left-3.5 top-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -69,35 +86,55 @@
         </svg>
       </div>
 
-      <!-- Фильтры -->
-      <div class="space-y-4 pt-1">
-        <div class="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-          <select id="sourceFilter" onchange="applyFilters()" class="bg-gray-100/80 text-xs font-semibold text-gray-700 rounded-xl px-3 py-2 border-0 focus:ring-0 cursor-pointer">
-            <option value="all">🌐 Все площадки</option>
-            <option value="HeadHunter">🔴 HeadHunter</option>
-            <option value="Хабр Карьера">🟦 Хабр Карьера</option>
-            <option value="Работа в России">🇷🇺 Работа в России</option>
-          </select>
+      <!-- Filters Grid -->
+      <div class="grid grid-cols-2 gap-2 pt-1">
+        
+        <!-- City Filter -->
+        <select id="cityFilter" onchange="applyFilters()" class="filter-3d bg-gray-100/90 text-xs font-semibold text-gray-700 rounded-xl px-3 py-2.5 border-0 focus:ring-0 cursor-pointer appearance-none">
+          <option value="all">🌆 Все города</option>
+          <option value="Москва">Москва</option>
+          <option value="Санкт-Петербург">Санкт-Петербург</option>
+          <option value="Казань">Казань</option>
+          <option value="Новосибирск">Новосибирск</option>
+        </select>
 
-          <select id="salaryFilter" onchange="applyFilters()" class="bg-gray-100/80 text-xs font-semibold text-gray-700 rounded-xl px-3 py-2 border-0 focus:ring-0 cursor-pointer">
-            <option value="all">💰 Любая зарплата</option>
-            <option value="specified">С указанным окладом</option>
-          </select>
-        </div>
+        <!-- Remote / Office Filter -->
+        <select id="typeFilter" onchange="applyFilters()" class="filter-3d bg-gray-100/90 text-xs font-semibold text-gray-700 rounded-xl px-3 py-2.5 border-0 focus:ring-0 cursor-pointer appearance-none">
+          <option value="all">💻 Формат работы</option>
+          <option value="remote">🏠 Удалённо</option>
+          <option value="office">🏢 В офисе / На месте</option>
+        </select>
 
-        <!-- 3D Balatro Button -->
-        <div class="balatro-container">
-          <button 
-            id="balatroBtn"
-            onclick="searchJobs()" 
-            class="balatro-btn w-full bg-gradient-to-r from-gray-900 via-black to-gray-800 text-white font-bold text-sm py-4 rounded-2xl border border-white/20 cursor-pointer select-none">
-            <span class="inline-block transform translate-z-2">Найти вакансии ✨</span>
-          </button>
-        </div>
+        <!-- Salary Filter -->
+        <select id="salaryFilter" onchange="applyFilters()" class="filter-3d bg-gray-100/90 text-xs font-semibold text-gray-700 rounded-xl px-3 py-2.5 border-0 focus:ring-0 cursor-pointer appearance-none">
+          <option value="all">💰 Любая зарплата</option>
+          <option value="specified">С указанным окладом</option>
+          <option value="100k">От 100 000 ₽</option>
+        </select>
+
+        <!-- Source Filter -->
+        <select id="sourceFilter" onchange="applyFilters()" class="filter-3d bg-gray-100/90 text-xs font-semibold text-gray-700 rounded-xl px-3 py-2.5 border-0 focus:ring-0 cursor-pointer appearance-none">
+          <option value="all">🌐 Все площадки</option>
+          <option value="HeadHunter">🔴 HeadHunter</option>
+          <option value="Хабр Карьера">🟦 Хабр Карьера</option>
+          <option value="Работа в России">🇷🇺 Работа в России</option>
+        </select>
+
       </div>
+
+      <!-- 3D Balatro Button -->
+      <div class="balatro-container pt-2">
+        <button 
+          id="balatroBtn"
+          onclick="searchJobs()" 
+          class="balatro-btn w-full bg-gradient-to-r from-gray-900 via-black to-gray-800 text-white font-bold text-sm py-4 rounded-2xl border border-white/20 cursor-pointer select-none">
+          <span class="inline-block transform translate-z-2">Найти вакансии ✨</span>
+        </button>
+      </div>
+
     </div>
 
-    <!-- Блок ИИ-Анализа от DeepSeek -->
+    <!-- AI Analysis Block -->
     <div id="aiBlock" class="hidden bg-gradient-to-br from-indigo-50/80 to-purple-50/80 p-4 rounded-3xl border border-indigo-100/50 shadow-sm">
       <div class="flex items-center gap-2 mb-2">
         <span class="text-base">✨</span>
@@ -106,7 +143,7 @@
       <p id="aiContent" class="text-xs leading-relaxed text-indigo-950 font-medium"></p>
     </div>
 
-    <!-- Результаты поиска -->
+    <!-- Vacancies List -->
     <div id="vacanciesList" class="space-y-3"></div>
 
   </div>
@@ -115,9 +152,26 @@
     const tg = window.Telegram?.WebApp;
     if (tg) tg.expand();
 
+    // Random dynamic placeholder professions
+    const professions = [
+      "Видеомонтажёр",
+      "Motion Designer",
+      "Python-разработчик",
+      "SMM-специалист",
+      "Графический дизайнер",
+      "3D-генералист",
+      "Product Manager",
+      "Копирайтер"
+    ];
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const randomProf = professions[Math.floor(Math.random() * professions.length)];
+      document.getElementById("searchInput").placeholder = `Например, ${randomProf}`;
+    });
+
     let rawVacancies = [];
 
-    // --- Balatro 3D Tilt Effect (Смягченный) ---
+    // Balatro 3D Button Tilt
     const btn = document.getElementById('balatroBtn');
     
     function handleMove(e) {
@@ -127,14 +181,10 @@
       
       const x = clientX - rect.left;
       const y = clientY - rect.top;
-      
       const centerX = rect.width / 2;
       const centerY = rect.height / 2;
       
-      // Наклон вверх/вниз
       const rotateX = ((y - centerY) / centerY) * -6; 
-
-      // Наклон влево/вправо (мягкий угол 5 градусов)
       const rotateY = ((x - centerX) / centerX) * 5; 
 
       btn.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.01, 1.01, 1.01)`;
@@ -149,15 +199,18 @@
     btn.addEventListener('touchmove', handleMove);
     btn.addEventListener('touchend', handleReset);
 
-
-    // --- Поиск и Фильтрация ---
+    // Search and Filter logic
     async function searchJobs() {
-      const query = document.getElementById('searchInput').value.trim();
+      const input = document.getElementById('searchInput');
+      let query = input.value.trim();
+      
+      if (!query) {
+        query = input.placeholder.replace("Например, ", "");
+      }
+
       const vacanciesList = document.getElementById('vacanciesList');
       const aiBlock = document.getElementById('aiBlock');
       const aiContent = document.getElementById('aiContent');
-
-      if (!query) return;
 
       vacanciesList.innerHTML = `
         <div class="text-center py-12">
@@ -200,17 +253,47 @@
     }
 
     function applyFilters() {
-      const source = document.getElementById('sourceFilter').value;
+      const city = document.getElementById('cityFilter').value;
+      const type = document.getElementById('typeFilter').value;
       const salary = document.getElementById('salaryFilter').value;
+      const source = document.getElementById('sourceFilter').value;
 
       let filtered = [...rawVacancies];
 
-      if (source !== 'all') {
-        filtered = filtered.filter(v => v.source === source);
+      // City Filter
+      if (city !== 'all') {
+        filtered = filtered.filter(v => 
+          (v.snippet && v.snippet.toLowerCase().includes(city.toLowerCase())) ||
+          (v.title && v.title.toLowerCase().includes(city.toLowerCase()))
+        );
       }
 
+      // Work Format Filter
+      if (type === 'remote') {
+        filtered = filtered.filter(v => 
+          (v.title + v.snippet).toLowerCase().includes('удален') || 
+          (v.title + v.snippet).toLowerCase().includes('remote')
+        );
+      } else if (type === 'office') {
+        filtered = filtered.filter(v => 
+          !(v.title + v.snippet).toLowerCase().includes('удален')
+        );
+      }
+
+      // Salary Filter
       if (salary === 'specified') {
         filtered = filtered.filter(v => v.salary && !v.salary.includes('договоренности'));
+      } else if (salary === '100k') {
+        filtered = filtered.filter(v => {
+          if (!v.salary) return false;
+          const nums = v.salary.replace(/\s/g, '').match(/\d+/g);
+          return nums && nums.some(n => parseInt(n, 10) >= 100000);
+        });
+      }
+
+      // Source Filter
+      if (source !== 'all') {
+        filtered = filtered.filter(v => v.source === source);
       }
 
       renderVacancies(filtered);

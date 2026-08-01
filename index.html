@@ -60,7 +60,7 @@
   <div class="sticky top-0 z-50 glass-card px-5 py-4 mb-6 shadow-sm border-b border-gray-200/50">
     <div class="max-w-md mx-auto flex justify-between items-center">
       <h1 class="text-xl font-bold tracking-tight text-gray-900">JobGo</h1>
-      <span class="text-xs font-semibold px-2.5 py-1 bg-gray-200/60 text-gray-600 rounded-full">v2.5</span>
+      <span class="text-xs font-semibold px-2.5 py-1 bg-gray-200/60 text-gray-600 rounded-full">v2.6</span>
     </div>
   </div>
 
@@ -384,33 +384,37 @@
 
       let filtered = [...rawVacancies];
 
-      // Filter City
+      // Filter City (Safe Check)
       if (cityQuery) {
-        filtered = filtered.filter(v => 
-          (v.snippet && v.snippet.toLowerCase().includes(cityQuery)) ||
-          (v.title && v.title.toLowerCase().includes(cityQuery))
-        );
+        filtered = filtered.filter(v => {
+          const fullText = ((v.title || '') + ' ' + (v.snippet || '') + ' ' + (v.company || '')).toLowerCase();
+          return fullText.includes(cityQuery);
+        });
       }
 
-      // Filter Salary
+      // Filter Salary (Safe Parsing)
       if (!isNaN(minSalary) && minSalary > 0) {
         filtered = filtered.filter(v => {
-          if (!v.salary) return false;
-          const nums = v.salary.replace(/\s/g, '').match(/\d+/g);
-          return nums && nums.some(n => parseInt(n, 10) >= minSalary);
+          if (!v.salary || v.salary.toLowerCase().includes('договор')) return false;
+          const numbers = v.salary.replace(/\s/g, '').match(/\d+/g);
+          if (!numbers) return false;
+          const parsedNums = numbers.map(n => parseInt(n, 10));
+          const maxSalaryInCard = Math.max(...parsedNums);
+          return maxSalaryInCard >= minSalary;
         });
       }
 
       // Filter Format
       if (type === 'remote') {
-        filtered = filtered.filter(v => 
-          (v.title + v.snippet).toLowerCase().includes('удален') || 
-          (v.title + v.snippet).toLowerCase().includes('remote')
-        );
+        filtered = filtered.filter(v => {
+          const fullText = ((v.title || '') + ' ' + (v.snippet || '')).toLowerCase();
+          return fullText.includes('удален') || fullText.includes('remote') || fullText.includes('из дома');
+        });
       } else if (type === 'office') {
-        filtered = filtered.filter(v => 
-          !(v.title + v.snippet).toLowerCase().includes('удален')
-        );
+        filtered = filtered.filter(v => {
+          const fullText = ((v.title || '') + ' ' + (v.snippet || '')).toLowerCase();
+          return !fullText.includes('удален') && !fullText.includes('remote');
+        });
       }
 
       // Filter Source
@@ -443,27 +447,27 @@
           <div class="bg-white p-5 rounded-3xl shadow-sm border border-gray-100/80 hover:shadow-md transition-all duration-200 flex flex-col justify-between">
             <div>
               <div class="flex justify-between items-start gap-2 mb-2">
-                <h3 class="font-bold text-base text-gray-900 leading-snug">${v.title}</h3>
+                <h3 class="font-bold text-base text-gray-900 leading-snug">${v.title || 'Вакансия'}</h3>
                 <span class="text-[10px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap ${sourceBadge}">
                   ${v.source || 'Вакансии'}
                 </span>
               </div>
               
               <div class="flex items-center gap-2 mb-3">
-                <span class="text-xs font-semibold text-gray-500">${v.company}</span>
+                <span class="text-xs font-semibold text-gray-500">${v.company || 'Компания не указана'}</span>
               </div>
 
               <div class="inline-block bg-emerald-50 text-emerald-700 text-xs font-bold px-3 py-1.5 rounded-xl mb-3">
-                ${v.salary}
+                ${v.salary || 'З/П не указана'}
               </div>
 
               <p class="text-xs text-gray-500 leading-relaxed line-clamp-2 mb-4 font-normal">
-                ${v.snippet}
+                ${v.snippet || ''}
               </p>
             </div>
 
             <a 
-              href="${v.url}" 
+              href="${v.url || '#'}" 
               target="_blank" 
               rel="noopener noreferrer" 
               class="block w-full text-center bg-gray-100 hover:bg-gray-200 text-gray-900 font-semibold text-xs py-3 rounded-2xl transition-all active:scale-[0.98]">

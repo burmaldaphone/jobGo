@@ -1,0 +1,776 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#f6f7fb">
+  <title>JobGo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --accent-from: #6366f1;
+      --accent-to: #8b5cf6;
+      --bg: #f6f7fb;
+      --card-bg: rgba(255, 255, 255, 0.72);
+      --border: rgba(15, 23, 42, 0.08);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      height: 100%; overflow-x: hidden;
+      background: var(--bg);
+      color: #0f172a;
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      background:
+        radial-gradient(ellipse 60% 40% at 15% -10%, rgba(99, 102, 241, 0.08) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 50% at 90% 0%, rgba(139, 92, 246, 0.06) 0%, transparent 60%),
+        var(--bg);
+    }
+
+    .glass {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid var(--border);
+      box-shadow: 0 8px 32px rgba(15, 23, 42, 0.06);
+    }
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      box-shadow: 0 10px 40px rgba(15, 23, 42, 0.08);
+    }
+
+    .filter-3d {
+      transform-style: preserve-3d;
+      transition: transform 0.15s ease, box-shadow 0.2s ease;
+      will-change: transform;
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, var(--accent-from) 0%, var(--accent-to) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+
+    .btn-gradient {
+      background: linear-gradient(135deg, var(--accent-from) 0%, var(--accent-to) 100%);
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+      transition: transform 0.15s ease, box-shadow 0.2s ease;
+    }
+    .btn-gradient:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4); }
+    .btn-gradient:active { transform: scale(0.97); }
+
+    /* ---------- Expressive profession input ---------- */
+    #querySearchWrap {
+      transition: box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
+      border: 1.5px solid transparent;
+    }
+    #querySearchWrap:focus-within {
+      border-color: rgba(99, 102, 241, 0.55);
+      box-shadow: 0 0 0 5px rgba(99, 102, 241, 0.12), 0 14px 30px rgba(99, 102, 241, 0.18);
+      transform: translateY(-2px);
+    }
+    #queryIcon {
+      transition: transform 0.25s ease, color 0.25s ease;
+      color: #94a3b8;
+    }
+    #querySearchWrap:focus-within #queryIcon {
+      color: var(--accent-from);
+      transform: scale(1.12) rotate(-6deg);
+    }
+    #queryInput {
+      font-size: 1.05rem;
+    }
+    #queryInput::placeholder {
+      color: #b6bccb;
+      font-weight: 500;
+    }
+    #queryClearBtn {
+      transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+    #queryClearBtn:active {
+      transform: scale(0.85);
+    }
+
+    /* ---------- Autocomplete ---------- */
+    .autocomplete-item {
+      transition: background 0.12s ease, color 0.12s ease;
+    }
+    .autocomplete-item:hover {
+      background: rgba(99, 102, 241, 0.08);
+      color: var(--accent-from);
+    }
+
+    /* ---------- Custom dropdown (city / salary) ---------- */
+    .custom-select-btn {
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      cursor: pointer;
+    }
+    .custom-select-btn .chev {
+      transition: transform 0.2s ease;
+    }
+    .custom-select-btn[aria-expanded="true"] .chev {
+      transform: rotate(180deg);
+    }
+    .custom-dropdown {
+      position: fixed;
+      z-index: 9999;
+      transform-origin: top center;
+      animation: dropdownIn 0.16s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+      max-height: 260px;
+      overflow-y: auto;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      box-shadow: 0 16px 48px rgba(15, 23, 42, 0.14);
+    }
+    @keyframes dropdownIn {
+      from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .option-item {
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .option-item:hover, .option-item.selected {
+      background: rgba(99, 102, 241, 0.1);
+      color: var(--accent-from);
+    }
+    .option-item.selected {
+      font-weight: 700;
+    }
+
+    /* ---------- Source tags ---------- */
+    .source-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border-radius: 9999px; font-size: 13px; font-weight: 700;
+      cursor: pointer; user-select: none;
+      border: 1.5px solid transparent;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+    }
+    .source-tag:hover { transform: scale(1.04); }
+    .source-tag:active { transform: scale(0.95); }
+    .source-tag.on { opacity: 1; border-color: currentColor; box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08); }
+    .source-tag.off { opacity: 0.38; }
+    .source-tag.hh { background: rgba(0, 112, 255, 0.1); color: #0070ff; }
+    .source-tag.habr { background: rgba(99, 102, 241, 0.1); color: #6366f1; }
+    .source-tag.trud { background: rgba(14, 165, 233, 0.1); color: #0ea5e9; }
+    .source-tag.sj { background: rgba(22, 163, 74, 0.1); color: #16a34a; }
+
+    .badge {
+      display: inline-flex; align-items: center; padding: 3px 10px;
+      border-radius: 9999px; font-size: 11px; font-weight: 700; letter-spacing: 0.02em;
+    }
+    .badge-hh { background: rgba(0, 112, 255, 0.1); color: #0070ff; }
+    .badge-habr { background: rgba(99, 102, 241, 0.1); color: #6366f1; }
+    .badge-trud { background: rgba(14, 165, 233, 0.1); color: #0ea5e9; }
+    .badge-sj { background: rgba(22, 163, 74, 0.1); color: #16a34a; }
+
+    /* ---------- Segmented control ---------- */
+    .seg-btn {
+      flex: 1; padding: 9px 8px; border-radius: 12px;
+      font-size: 13px; font-weight: 600; text-align: center;
+      color: #64748b; cursor: pointer;
+      transition: all 0.18s ease;
+      -webkit-user-select: none; user-select: none;
+    }
+    .seg-btn.active {
+      background: linear-gradient(135deg, var(--accent-from), var(--accent-to));
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+    }
+
+    /* ---------- Vacancy card ---------- */
+    .vacancy-card {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .vacancy-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 40px rgba(15, 23, 42, 0.1);
+    }
+
+    .ai-card {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+    }
+
+    /* ---------- Dots loading ---------- */
+    .dot-pulse { animation: dotPulse 1.4s infinite ease-in-out both; }
+    .dot-pulse:nth-child(1) { animation-delay: -0.32s; }
+    .dot-pulse:nth-child(2) { animation-delay: -0.16s; }
+    .dot-pulse:nth-child(3) { animation-delay: 0s; }
+    @keyframes dotPulse { 0%, 80%, 100% { transform: scale(0); opacity: 0.4; } 40% { transform: scale(1); opacity: 1; } }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in-up { animation: fadeInUp 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+    @media (max-width: 640px) {
+      .btn-gradient { width: 100%; }
+    }
+  </style>
+</head>
+<body class="pb-12">
+  <div class="max-w-lg mx-auto px-5 pt-7">
+    <header class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-extrabold text-slate-800 tracking-tight"><span class="gradient-text">JobGo</span></h1>
+        <p class="text-xs mt-1 text-slate-400 font-medium">Поиск вакансий с AI-анализом</p>
+      </div>
+      <div class="w-10 h-10 rounded-2xl glass flex items-center justify-center">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+      </div>
+    </header>
+
+    <section class="glass rounded-3xl p-4 space-y-3 relative z-20">
+      <!-- Profession input with autocomplete -->
+      <div class="relative filter-3d rounded-2xl">
+        <div id="querySearchWrap" class="flex items-center gap-3 bg-white/70 rounded-2xl px-4 py-3">
+          <svg id="queryIcon" width="22" height="22" viewBox="0 0 24 24" fill="none" class="shrink-0">
+            <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2.2"/>
+            <path d="M20 20L16.5 16.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+          </svg>
+          <div class="flex-1 min-w-0">
+            <label class="block text-[11px] font-bold uppercase tracking-wide text-indigo-400/80">Кем хотите работать?</label>
+            <input
+              id="queryInput"
+              type="text"
+              placeholder="Frontend-разработчик, дизайнер, курьер…"
+              autocomplete="off"
+              class="w-full bg-transparent text-slate-800 font-bold placeholder-slate-400 outline-none"
+            />
+          </div>
+          <button id="queryClearBtn" type="button" aria-label="Очистить" class="hidden shrink-0 w-6 h-6 rounded-full bg-slate-200/70 text-slate-500 text-sm font-bold flex items-center justify-center">✕</button>
+        </div>
+        <div id="autocompleteList" class="hidden absolute left-0 right-0 top-full mt-2 glass-card rounded-2xl p-2 z-30"></div>
+      </div>
+
+      <!-- City custom dropdown -->
+      <div class="relative filter-3d rounded-2xl glass-card">
+        <label class="block text-xs font-semibold text-slate-500 px-4 pt-3">Город</label>
+        <button type="button" id="cityBtn" aria-expanded="false" class="custom-select-btn px-4 pb-3 pt-1 flex items-center justify-between">
+          <span id="cityBtnLabel" class="text-slate-800 font-medium">Москва</span>
+          <svg class="chev shrink-0 text-slate-400" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <input
+          id="customCityInput"
+          type="text"
+          placeholder="Введите город"
+          class="hidden w-full bg-transparent px-4 pb-3 text-slate-800 font-medium placeholder-slate-400 outline-none border-t border-white/50"
+        />
+        <div id="cityDropdown" class="hidden custom-dropdown rounded-2xl p-2">
+          <div class="option-item selected px-3 py-2.5 rounded-xl cursor-pointer text-sm text-slate-700" data-value="Москва">Москва</div>
+          <div class="option-item px-3 py-2.5 rounded-xl cursor-pointer text-sm text-slate-700" data-value="Санкт-Петербург">Санкт-Петербург</div>
+          <div class="option-item px-3 py-2.5 rounded-xl cursor-pointer text-sm text-slate-700" data-value="Казань">Казань</div>
+          <div class="option-item px-3 py-2.5 rounded-xl cursor-pointer text-sm text-slate-700" data-value="Екатеринбург">Екатеринбург</div>
+          <div class="option-item px-3 py-2.5 rounded-xl cursor-pointer text-sm text-slate-700" data-value="__custom">Другой город...</div>
+        </div>
+      </div>
+
+      <!-- Salary custom dropdown -->
+      <div class="relative filter-3d rounded-2xl glass-card">
+        <label class="block text-xs font-semibold text-slate-500 px-4 pt-3">Зарплата от</label>
+        <button type="button" id="salaryBtn" aria-expanded="false" class="custom-select-btn px-4 pb-3 pt-1 flex items-center justify-between">
+          <span id="salaryBtnLabel" class="text-slate-800 font-medium">Не важно</span>
+          <svg class="chev shrink-0 text-slate-400" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <input
+          id="customSalaryInput"
+          type="number"
+          placeholder="Введите сумму"
+          class="hidden w-full bg-transparent px-4 pb-3 text-slate-800 font-medium placeholder-slate-400 outline-none border-t border-white/50"
+        />
+        <div id="salaryDropdown" class="hidden custom-dropdown rounded-2xl p-2">
+          <div class="option-item selected px-3 py-2.5 rounded-xl cursor-pointer text-sm text-slate-700" data-value="">Не важно</div>
+          <div class="option-item px-3 py-2.5 rounded-xl cursor-pointer text-sm text-slate-700" data-value="50000">от 50 000 ₽</div>
+          <div class="option-item px-3 py-2.5 rounded-xl cursor-pointer text-sm text-slate-700" data-value="100000">от 100 000 ₽</div>
+          <div class="option-item px-3 py-2.5 rounded-xl cursor-pointer text-sm text-slate-700" data-value="150000">от 150 000 ₽</div>
+          <div class="option-item px-3 py-2.5 rounded-xl cursor-pointer text-sm text-slate-700" data-value="__custom">Своя сумма...</div>
+        </div>
+      </div>
+
+      <!-- Schedule segmented control -->
+      <div>
+        <label class="block text-xs font-semibold text-slate-500 px-1 pt-1">Формат</label>
+        <div id="scheduleGroup" class="flex gap-1.5 mt-1.5 bg-slate-100/80 rounded-2xl p-1.5">
+          <div class="seg-btn active" data-schedule="">Любой</div>
+          <div class="seg-btn" data-schedule="remote">Удалённо</div>
+          <div class="seg-btn" data-schedule="office">Офис</div>
+        </div>
+      </div>
+
+      <!-- Source tags -->
+      <div>
+        <label class="block text-xs font-semibold text-slate-500 px-1 pt-1">Источники</label>
+        <div id="sourceGroup" class="flex flex-wrap gap-2 mt-2 px-1">
+          <span class="source-tag hh on" data-source="hh">HH</span>
+          <span class="source-tag habr on" data-source="habr">Хабр</span>
+          <span class="source-tag trud on" data-source="trudvsem">Россия</span>
+          <span class="source-tag sj on" data-source="superjob">SJ</span>
+        </div>
+      </div>
+
+      <button id="searchBtn" type="button" class="btn-gradient w-full py-3.5 rounded-2xl font-bold text-white text-base flex items-center justify-center gap-2">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Найти вакансии
+      </button>
+    </section>
+
+    <!-- AI analysis -->
+    <div id="aiAnalysisBlock" class="ai-card rounded-2xl p-4 mt-5 hidden">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-lg">✨</span>
+        <h3 class="font-bold text-sm text-indigo-700">Анализ AI-ассистента</h3>
+      </div>
+      <p id="aiAnalysisText" class="text-sm leading-relaxed text-slate-700"></p>
+    </div>
+
+    <!-- Loading -->
+    <div id="loadingState" class="hidden flex flex-col items-center justify-center py-16">
+      <div class="flex gap-2 mb-4">
+        <div class="w-2.5 h-2.5 rounded-full dot-pulse" style="background:var(--accent-from);"></div>
+        <div class="w-2.5 h-2.5 rounded-full dot-pulse" style="background:var(--accent-from);"></div>
+        <div class="w-2.5 h-2.5 rounded-full dot-pulse" style="background:var(--accent-from);"></div>
+      </div>
+      <p class="text-sm text-slate-500 font-medium">Ищем вакансии...</p>
+    </div>
+
+    <!-- Error -->
+    <div id="errorState" class="hidden glass rounded-2xl p-5 mt-5 text-center">
+      <p class="text-sm text-slate-500" id="errorMessage">Произошла ошибка. Попробуйте ещё раз.</p>
+    </div>
+
+    <!-- Results -->
+    <div id="resultsHeader" class="hidden flex items-center justify-between mt-6 mb-3 px-1">
+      <h2 class="text-lg font-bold text-slate-800 tracking-tight">Найдено вакансий</h2>
+      <span id="resultsCount" class="text-sm text-slate-400 font-medium"></span>
+    </div>
+    <div id="vacanciesList" class="space-y-3"></div>
+
+    <!-- Empty -->
+    <div id="emptyState" class="hidden flex flex-col items-center justify-center py-20 text-center">
+      <div class="w-16 h-16 rounded-2xl glass flex items-center justify-center mb-4">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+      </div>
+      <p class="text-sm text-slate-500">Начните поиск вакансий</p>
+      <p class="text-xs mt-1.5 text-slate-400">Введите профессию и нажмите «Найти»</p>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      // ---------------- Telegram ----------------
+      var tg = null;
+      try { tg = window.Telegram && window.Telegram.WebApp; } catch (e) { tg = null; }
+      if (tg) {
+        tg.ready();
+        tg.expand();
+        tg.setHeaderColor('#f6f7fb');
+        tg.setBackgroundColor('#f6f7fb');
+      }
+
+      // ---------------- Elements ----------------
+      var queryInput = document.getElementById("queryInput");
+      var queryClearBtn = document.getElementById("queryClearBtn");
+      var autocompleteList = document.getElementById("autocompleteList");
+      var cityBtn = document.getElementById("cityBtn");
+      var cityBtnLabel = document.getElementById("cityBtnLabel");
+      var cityDropdown = document.getElementById("cityDropdown");
+      var customCityInput = document.getElementById("customCityInput");
+      var salaryBtn = document.getElementById("salaryBtn");
+      var salaryBtnLabel = document.getElementById("salaryBtnLabel");
+      var salaryDropdown = document.getElementById("salaryDropdown");
+      var customSalaryInput = document.getElementById("customSalaryInput");
+      var scheduleGroup = document.getElementById("scheduleGroup");
+      var sourceGroup = document.getElementById("sourceGroup");
+      var searchBtn = document.getElementById("searchBtn");
+      var loadingState = document.getElementById("loadingState");
+      var errorState = document.getElementById("errorState");
+      var errorMessage = document.getElementById("errorMessage");
+      var resultsHeader = document.getElementById("resultsHeader");
+      var resultsCount = document.getElementById("resultsCount");
+      var vacanciesList = document.getElementById("vacanciesList");
+      var emptyState = document.getElementById("emptyState");
+      var aiAnalysisBlock = document.getElementById("aiAnalysisBlock");
+      var aiAnalysisText = document.getElementById("aiAnalysisText");
+
+      var selectedCity = "Москва";
+      var selectedSalary = "";
+      var selectedSchedule = "";
+      var activeSources = ["hh", "habr", "trudvsem", "superjob"];
+
+      // ---------------- Professions ----------------
+      var PROFESSIONS = [
+        "Frontend-разработчик", "Backend-разработчик", "Fullstack-разработчик",
+        "Python-разработчик", "Java-разработчик", "Go-разработчик", "PHP-разработчик",
+        "DevOps-инженер", "SRE-инженер", "Data Scientist", "ML-инженер", "Data Engineer",
+        "QA-инженер", "Тестировщик", "Product Manager", "Project Manager", "Scrum Master",
+        "UX/UI-дизайнер", "Графический дизайнер", "Motion-дизайнер", "Веб-дизайнер",
+        "iOS-разработчик", "Android-разработчик", "Flutter-разработчик", "React Native-разработчик",
+        "Системный аналитик", "Бизнес-аналитик", "HR-менеджер", "Рекрутер",
+        "SMM-менеджер", "Контент-менеджер", "Копирайтер", "Маркетолог",
+        "Менеджер по продажам", "Account Manager", "Поддержка",
+        "Технический писатель", "Специалист поддержки", "Системный администратор",
+        "Курьер", "Водитель", "Официант", "Повар", "Кассир", "Складской работник"
+      ];
+
+      // Плейсхолдер с примером профессии — меняется при каждой перезагрузке страницы
+      var randomExample = PROFESSIONS[Math.floor(Math.random() * PROFESSIONS.length)];
+      queryInput.setAttribute("placeholder", "Например, " + randomExample);
+
+      // ---------------- Autocomplete ----------------
+      function renderAutocomplete(matches) {
+        if (!matches.length) {
+          autocompleteList.classList.add("hidden");
+          return;
+        }
+        autocompleteList.innerHTML = "";
+        matches.slice(0, 7).forEach(function (m) {
+          var item = document.createElement("div");
+          item.className = "autocomplete-item px-3 py-2.5 rounded-xl cursor-pointer text-sm text-slate-700";
+          item.textContent = m;
+          autocompleteList.appendChild(item);
+        });
+        autocompleteList.classList.remove("hidden");
+      }
+
+      queryInput.addEventListener("input", function () {
+        var val = queryInput.value.trim().toLowerCase();
+        queryClearBtn.classList.toggle("hidden", !queryInput.value);
+        if (!val) { renderAutocomplete([]); return; }
+        var matches = PROFESSIONS.filter(function (p) { return p.toLowerCase().indexOf(val) !== -1; });
+        renderAutocomplete(matches);
+      });
+
+      queryClearBtn.addEventListener("click", function () {
+        queryInput.value = "";
+        queryClearBtn.classList.add("hidden");
+        renderAutocomplete([]);
+        queryInput.focus();
+      });
+
+      autocompleteList.addEventListener("click", function (e) {
+        var item = e.target.closest(".autocomplete-item");
+        if (!item) return;
+        queryInput.value = item.textContent;
+        queryClearBtn.classList.remove("hidden");
+        renderAutocomplete([]);
+      });
+
+      document.addEventListener("click", function (e) {
+        if (!e.target.closest("#querySearchWrap") && !e.target.closest("#autocompleteList")) {
+          autocompleteList.classList.add("hidden");
+        }
+      });
+
+      queryInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          autocompleteList.classList.add("hidden");
+          searchVacancies();
+        }
+      });
+
+      // ---------------- Generic custom dropdown helper ----------------
+      function setupDropdown(opts) {
+        var btn = opts.btn, btnLabel = opts.btnLabel, dropdown = opts.dropdown;
+        var customInput = opts.customInput, onSelect = opts.onSelect;
+
+        // Переносим панель прямо в <body> — так на неё не влияют transform
+        // и transform-style:preserve-3d родительских блоков (3D-tilt), которые
+        // в вебвью Telegram могли ломать позиционирование и клики.
+        document.body.appendChild(dropdown);
+
+        function position() {
+          var tiltParent = btn.closest(".filter-3d");
+          if (tiltParent) tiltParent.style.transform = "";
+          var rect = btn.getBoundingClientRect();
+          dropdown.style.left = rect.left + "px";
+          dropdown.style.width = rect.width + "px";
+          dropdown.style.top = (rect.bottom + 8) + "px";
+        }
+
+        function open() {
+          closeAllDropdowns();
+          position();
+          dropdown.classList.remove("hidden");
+          dropdown.style.display = "block";
+          btn.setAttribute("aria-expanded", "true");
+        }
+        function close() {
+          dropdown.classList.add("hidden");
+          dropdown.style.display = "none";
+          btn.setAttribute("aria-expanded", "false");
+        }
+
+        btn.addEventListener("click", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          var isOpen = dropdown.style.display === "block";
+          isOpen ? close() : open();
+        });
+
+        dropdown.addEventListener("click", function (e) {
+          e.stopPropagation();
+          var item = e.target.closest(".option-item");
+          if (!item) return;
+
+          Array.prototype.forEach.call(dropdown.querySelectorAll(".option-item"), function (o) { o.classList.remove("selected"); });
+          item.classList.add("selected");
+
+          var value = item.dataset.value;
+
+          if (value === "__custom") {
+            btnLabel.textContent = "Свой вариант";
+            customInput.classList.remove("hidden");
+            customInput.value = "";
+            customInput.focus();
+            onSelect("__custom");
+          } else {
+            btnLabel.textContent = item.textContent;
+            customInput.classList.add("hidden");
+            customInput.value = "";
+            onSelect(value);
+          }
+
+          close();
+          if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+        });
+
+        return { close: close };
+      }
+
+      function closeAllDropdowns() {
+        [cityDropdown, salaryDropdown].forEach(function (d) {
+          d.classList.add("hidden");
+          d.style.display = "none";
+        });
+        [cityBtn, salaryBtn].forEach(function (b) { b.setAttribute("aria-expanded", "false"); });
+      }
+
+      document.addEventListener("click", closeAllDropdowns);
+      window.addEventListener("scroll", closeAllDropdowns, true);
+      window.addEventListener("resize", closeAllDropdowns);
+
+      setupDropdown({
+        btn: cityBtn,
+        btnLabel: cityBtnLabel,
+        dropdown: cityDropdown,
+        customInput: customCityInput,
+        onSelect: function (value) { selectedCity = value === "__custom" ? "" : value; }
+      });
+
+      customCityInput.addEventListener("input", function () {
+        selectedCity = customCityInput.value.trim();
+      });
+
+      setupDropdown({
+        btn: salaryBtn,
+        btnLabel: salaryBtnLabel,
+        dropdown: salaryDropdown,
+        customInput: customSalaryInput,
+        onSelect: function (value) { selectedSalary = value === "__custom" ? "" : value; }
+      });
+
+      customSalaryInput.addEventListener("input", function () {
+        selectedSalary = customSalaryInput.value.trim();
+      });
+
+      // ---------------- Schedule segmented control ----------------
+      scheduleGroup.addEventListener("click", function (e) {
+        var btn = e.target.closest(".seg-btn");
+        if (!btn) return;
+        Array.prototype.forEach.call(scheduleGroup.querySelectorAll(".seg-btn"), function (b) { b.classList.remove("active"); });
+        btn.classList.add("active");
+        selectedSchedule = btn.dataset.schedule || "";
+        if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+      });
+
+      // ---------------- Source tags ----------------
+      sourceGroup.addEventListener("click", function (e) {
+        var tag = e.target.closest(".source-tag");
+        if (!tag) return;
+        var src = tag.dataset.source;
+        var wasOn = tag.classList.contains("on");
+        if (wasOn) {
+          tag.classList.remove("on");
+          tag.classList.add("off");
+          activeSources = activeSources.filter(function (s) { return s !== src; });
+        } else {
+          tag.classList.remove("off");
+          tag.classList.add("on");
+          if (activeSources.indexOf(src) === -1) activeSources.push(src);
+        }
+        if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+      });
+
+      // ---------------- Filter-3d tilt (subtle) for inputs ----------------
+      document.querySelectorAll(".filter-3d").forEach(function (el) {
+        el.addEventListener("mousemove", function (e) {
+          if (el.querySelector('[aria-expanded="true"]')) return;
+          var rect = el.getBoundingClientRect();
+          var x = e.clientX - rect.left;
+          var y = e.clientY - rect.top;
+          var cx = rect.width / 2;
+          var cy = rect.height / 2;
+          var rx = ((y - cy) / cy) * -4;
+          var ry = ((x - cx) / cx) * 4;
+          el.style.transform = "perspective(600px) rotateX(" + rx + "deg) rotateY(" + ry + "deg)";
+        });
+        el.addEventListener("mouseleave", function () {
+          el.style.transform = "";
+        });
+      });
+
+      // ---------------- Utils ----------------
+      function escapeHtml(str) {
+        if (!str) return "";
+        return String(str)
+          .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+      }
+
+      function timeAgo(iso) {
+        if (!iso) return "";
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return "";
+        var diff = Date.now() - d.getTime();
+        var days = Math.floor(diff / 86400000);
+        if (days <= 0) return "сегодня";
+        if (days === 1) return "вчера";
+        return days + " дн. назад";
+      }
+
+      function badgeClass(source) {
+        var map = { hh: "badge-hh", habr: "badge-habr", trudvsem: "badge-trud", superjob: "badge-sj" };
+        return map[source] || "badge-hh";
+      }
+      function sourceName(source) {
+        var map = { hh: "HH", habr: "Хабр", trudvsem: "Россия", superjob: "SJ" };
+        return map[source] || source;
+      }
+
+      function renderVacancies(list) {
+        vacanciesList.innerHTML = "";
+        if (!list.length) {
+          resultsHeader.classList.add("hidden");
+          emptyState.classList.remove("hidden");
+          return;
+        }
+        resultsHeader.classList.remove("hidden");
+        emptyState.classList.add("hidden");
+        resultsCount.textContent = list.length + " шт.";
+
+        list.forEach(function (v, i) {
+          var card = document.createElement("a");
+          card.href = v.url || "#";
+          card.target = "_blank";
+          card.rel = "noopener";
+          card.className = "vacancy-card block glass rounded-2xl p-4 no-underline";
+          card.style.animationDelay = Math.min(i * 40, 400) + "ms";
+          card.classList.add("animate-fade-in-up");
+
+          var salaryHtml = v.salary && v.salary !== "Зарплата не указана"
+            ? '<div class="text-[15px] font-bold text-slate-800 mt-1">' + escapeHtml(v.salary) + "</div>"
+            : "";
+
+          var meta = [];
+          if (v.area) meta.push('<span>' + escapeHtml(v.area) + "</span>");
+          if (v.schedule) meta.push('<span>' + escapeHtml(v.schedule) + "</span>");
+          if (timeAgo(v.publishedAt)) meta.push('<span class="text-slate-400">' + timeAgo(v.publishedAt) + "</span>");
+
+          var snippet = "";
+          var req = v.snippet && v.snippet.requirement ? v.snippet.requirement : "";
+          if (req) {
+            snippet = '<p class="text-[13px] text-slate-500 leading-relaxed mt-2 line-clamp-2">' + escapeHtml(req) + "</p>";
+          }
+
+          card.innerHTML =
+            '<div class="flex items-start justify-between gap-3">' +
+              '<div class="min-w-0">' +
+                '<div class="flex items-center gap-2 flex-wrap">' +
+                  '<span class="badge ' + badgeClass(v.source) + '">' + sourceName(v.source) + "</span>" +
+                "</div>" +
+                '<h4 class="font-bold text-slate-800 text-[15px] leading-snug mt-1.5">' + escapeHtml(v.title) + "</h4>" +
+                '<p class="text-[13px] text-slate-500 font-medium mt-0.5">' + escapeHtml(v.company) + "</p>" +
+              "</div>" +
+            "</div>" +
+            salaryHtml +
+            (meta.length ? '<div class="flex flex-wrap gap-2 text-xs text-slate-400 mt-1.5">' + meta.join(" · ") + "</div>" : "") +
+            snippet;
+
+          vacanciesList.appendChild(card);
+        });
+      }
+
+      // ---------------- Search ----------------
+      window.searchVacancies = function () {
+        autocompleteList.classList.add("hidden");
+        var query = queryInput.value.trim();
+        var city = selectedCity.trim();
+        var salary = selectedSalary.trim();
+        var schedule = selectedSchedule || "";
+
+        if (!query && !city) {
+          errorMessage.textContent = "Введите профессию или выберите город.";
+          errorState.classList.remove("hidden");
+          resultsHeader.classList.add("hidden");
+          emptyState.classList.add("hidden");
+          vacanciesList.innerHTML = "";
+          return;
+        }
+
+        loadingState.classList.remove("hidden");
+        errorState.classList.add("hidden");
+        aiAnalysisBlock.classList.add("hidden");
+        resultsHeader.classList.add("hidden");
+        vacanciesList.innerHTML = "";
+        emptyState.classList.add("hidden");
+
+        var params = new URLSearchParams();
+        if (query) params.set("query", query);
+        if (city) params.set("city", city);
+        if (salary) params.set("salary", salary);
+        if (schedule) params.set("schedule", schedule);
+        if (activeSources.length) params.set("sources", activeSources.join(","));
+
+        fetch("/api/vacancies?" + params.toString())
+          .then(function (r) {
+            if (!r.ok) throw new Error("HTTP " + r.status);
+            return r.json();
+          })
+          .then(function (data) {
+            loadingState.classList.add("hidden");
+            if (data.aiAnalysis) {
+              aiAnalysisText.textContent = data.aiAnalysis;
+              aiAnalysisBlock.classList.remove("hidden");
+            }
+            renderVacancies(data.vacancies || []);
+          })
+          .catch(function () {
+            loadingState.classList.add("hidden");
+            errorMessage.textContent = "Не удалось получить вакансии. Попробуйте ещё раз.";
+            errorState.classList.remove("hidden");
+          });
+      };
+
+      searchBtn.addEventListener("click", searchVacancies);
+    })();
+  </script>
+</body>
+</html>
